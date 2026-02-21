@@ -1,3 +1,5 @@
+ https://shawnatwsu.github.io/nexus-hazard/
+
 # 🌍 NEXUS — Global Hazard Monitor
 
 > **A free, real-time 3D Earth visualization tracking natural disasters as they happen — built for education, transparency, and public awareness.**
