@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — Global Hazard Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c:#00e5ff;--cd:rgba(0,229,255,.12);--cb:rgba(0,229,255,.05);
+  --r:#ff1744;--g:#00e676;--y:#ffea00;--o:#ff6d00;
+  --bg:#000308;--bord:rgba(0,229,255,.18);--txt:rgba(0,229,255,.8);--mut:rgba(0,229,255,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
+body{font-family:'Share Tech Mono',monospace;color:var(--txt);cursor:crosshair;}
+canvas{display:block;position:fixed;inset:0;z-index:1;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 3px);pointer-events:none;z-index:998;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 80% at 50% 50%,transparent 40%,rgba(0,0,0,.7) 100%);pointer-events:none;z-index:2;}
+
+/* TOP BAR */
+#top{position:fixed;top:0;left:0;right:0;height:52px;background:linear-gradient(180deg,rgba(0,3,8,.98),transparent);border-bottom:1px solid var(--bord);display:flex;align-items:center;padding:0 20px;gap:0;z-index:100;}
+#top::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--c),transparent);opacity:.4;}
+.logo{display:flex;flex-direction:column;gap:0;margin-right:24px;}
+.logo-title{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;letter-spacing:.18em;color:#fff;text-shadow:0 0 18px var(--c),0 0 36px rgba(0,229,255,.3);}
+.logo-sub{font-size:.38rem;letter-spacing:.4em;color:var(--mut);}
+.tdiv{width:1px;height:28px;background:var(--bord);margin:0 16px;}
+.tst{display:flex;flex-direction:column;gap:1px;}
+.tst-l{font-size:.38rem;letter-spacing:.2em;color:var(--mut);}
+.tst-v{font-family:'Orbitron',monospace;font-size:.65rem;font-weight:600;color:var(--c);text-shadow:0 0 6px var(--c);}
+.tsp{flex:1;}
+#live{display:flex;align-items:center;gap:7px;font-size:.5rem;letter-spacing:.1em;color:var(--mut);}
+.lpulse{width:6px;height:6px;border-radius:50%;background:var(--g);box-shadow:0 0 7px var(--g);animation:lp 1.4s ease infinite;flex-shrink:0;}
+@keyframes lp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.5)}}
+.threat-wrap{display:flex;align-items:center;gap:8px;margin-left:16px;}
+.tbl{font-size:.38rem;letter-spacing:.2em;color:var(--mut);}
+.tbb{width:90px;height:3px;background:rgba(255,255,255,.05);border:1px solid var(--bord);}
+#tbi{height:100%;width:0%;transition:width 1s,background 1s;}
+.tbv{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:700;min-width:22px;}
+
+/* HUD CORNERS */
+.hc{position:fixed;z-index:90;pointer-events:none;}
+.hc::before,.hc::after{content:'';position:absolute;background:var(--c);box-shadow:0 0 3px var(--c);}
+.hc::before{width:16px;height:1.5px;} .hc::after{width:1.5px;height:16px;}
+.hc-tl{top:60px;left:10px;} .hc-tl::before,.hc-tl::after{top:0;left:0;}
+.hc-tr{top:60px;right:10px;} .hc-tr::before{top:0;right:0;} .hc-tr::after{top:0;right:0;}
+.hc-bl{bottom:28px;left:10px;} .hc-bl::before{bottom:0;left:0;} .hc-bl::after{bottom:0;left:0;}
+.hc-br{bottom:28px;right:10px;} .hc-br::before{bottom:0;right:0;} .hc-br::after{bottom:0;right:0;}
+
+/* LEFT PANEL */
+#lp{position:fixed;left:12px;top:64px;display:flex;flex-direction:column;gap:4px;z-index:100;animation:sfl .5s ease .2s both;}
+@keyframes sfl{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+.pt{font-size:.4rem;letter-spacing:.28em;color:var(--mut);margin-bottom:2px;padding-bottom:3px;border-bottom:1px solid var(--bord);}
+.hb{display:flex;align-items:center;gap:7px;background:var(--cb);border:1px solid rgba(0,229,255,.08);border-left:2px solid var(--c2,var(--bord));padding:4px 8px 4px 7px;cursor:pointer;transition:all .12s;min-width:164px;}
+.hb.on{border-color:var(--c2,var(--bord));background:rgba(0,229,255,.05);}
+.hb:hover{background:rgba(0,229,255,.08);}
+.hi{font-size:.75rem;flex-shrink:0;line-height:1;}
+.hinfo{flex:1;}
+.hn{font-size:.47rem;letter-spacing:.07em;font-weight:600;color:rgba(0,229,255,.65);}
+.hct{font-size:.4rem;color:var(--mut);margin-top:1px;}
+.hpip{width:4px;height:4px;border-radius:50%;background:var(--c2,var(--c));opacity:.15;transition:all .15s;flex-shrink:0;}
+.hb.on .hpip{opacity:1;box-shadow:0 0 4px var(--c2,var(--c));}
+
+/* RIGHT PANEL */
+#rp{position:fixed;right:12px;top:64px;display:flex;flex-direction:column;gap:4px;z-index:100;animation:sfr .5s ease .2s both;}
+@keyframes sfr{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.sc{background:var(--cb);border:1px solid var(--bord);border-right:2px solid var(--c);padding:6px 10px 6px 9px;text-align:right;min-width:140px;}
+.sc::before{content:'';display:block;height:1px;background:linear-gradient(90deg,transparent,var(--c));opacity:.25;margin-bottom:5px;}
+.sc-l{font-size:.38rem;letter-spacing:.2em;color:var(--mut);}
+.sc-v{font-family:'Orbitron',monospace;font-size:1.15rem;font-weight:700;color:var(--c);text-shadow:0 0 8px var(--c);line-height:1.1;margin-top:1px;}
+.sc-v.red{color:var(--r);text-shadow:0 0 8px var(--r);}
+.sc-v.sm{font-size:.55rem;line-height:1.4;padding-top:2px;}
+
+/* MAG FILTER */
+#magp{position:fixed;right:12px;bottom:110px;z-index:100;background:var(--cb);border:1px solid var(--bord);padding:9px 11px;}
+.mpt{font-size:.4rem;letter-spacing:.2em;color:var(--mut);margin-bottom:7px;}
+#mag-range{-webkit-appearance:none;width:130px;height:3px;background:rgba(0,229,255,.1);border-radius:1px;outline:none;cursor:pointer;display:block;}
+#mag-range::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:#000;border:2px solid var(--c);box-shadow:0 0 6px var(--c);cursor:grab;}
+#mag-range::-webkit-slider-runnable-track{background:linear-gradient(90deg,rgba(0,229,255,.5) var(--pct,0%),rgba(0,229,255,.08) var(--pct,0%));border-radius:1px;height:3px;}
+#mag-val{font-family:'Orbitron',monospace;font-size:.62rem;color:var(--c);text-align:center;margin-top:5px;}
+
+/* ZOOM DISPLAY */
+#zoomd{position:fixed;right:12px;bottom:68px;z-index:100;background:var(--cb);border:1px solid var(--bord);padding:4px 10px;font-size:.42rem;letter-spacing:.14em;color:var(--mut);display:flex;align-items:center;gap:6px;}
+#zoom-val{font-family:'Orbitron',monospace;font-size:.58rem;color:var(--c);}
+
+/* LEGEND */
+#legend{position:fixed;left:12px;bottom:28px;z-index:100;background:var(--cb);border:1px solid var(--bord);padding:8px 11px;}
+.lt{font-size:.4rem;letter-spacing:.2em;color:var(--mut);margin-bottom:5px;}
+.lr{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:.46rem;color:var(--mut);}
+.ld{border-radius:50%;flex-shrink:0;}
+.lsep{height:1px;background:var(--bord);margin:5px 0;}
+
+/* TICKER */
+#ticker{position:fixed;bottom:0;left:0;right:0;height:22px;background:rgba(0,3,8,.97);border-top:1px solid var(--bord);display:flex;align-items:center;overflow:hidden;z-index:100;}
+.tk-label{background:var(--c);color:#000;font-family:'Orbitron',monospace;font-size:.42rem;font-weight:700;letter-spacing:.12em;padding:0 9px;height:100%;display:flex;align-items:center;flex-shrink:0;}
+.tk-scroll{flex:1;overflow:hidden;position:relative;height:100%;}
+#tk-inner{position:absolute;left:100%;white-space:nowrap;height:100%;display:flex;align-items:center;font-size:.48rem;letter-spacing:.04em;color:var(--mut);animation:tick 80s linear infinite;}
+@keyframes tick{to{left:-300%;}}
+
+/* CONTROLS */
+#ctrl{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:rgba(0,3,8,.92);border:1px solid var(--bord);padding:5px 12px;display:flex;align-items:center;gap:4px;z-index:100;backdrop-filter:blur(8px);}
+#ctrl::before,#ctrl::after{content:'';position:absolute;top:50%;transform:translateY(-50%);width:5px;height:5px;border:1px solid var(--c);border-radius:50%;}
+#ctrl::before{left:-3px;} #ctrl::after{right:-3px;}
+.csep{width:1px;height:14px;background:var(--bord);}
+.cb{background:transparent;border:1px solid rgba(0,229,255,.1);color:var(--mut);font-family:'Share Tech Mono',monospace;font-size:.46rem;letter-spacing:.1em;padding:3px 8px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.cb:hover,.cb.on{border-color:var(--c);color:var(--c);box-shadow:0 0 6px rgba(0,229,255,.25);}
+.cb.on{background:rgba(0,229,255,.06);}
+
+/* TOOLTIP */
+#tt{position:fixed;z-index:300;background:rgba(0,3,8,.95);border:1px solid var(--bord);padding:7px 11px;pointer-events:none;opacity:0;transition:opacity .08s;white-space:nowrap;}
+#tt::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--c);opacity:.5;}
+#tt.show{opacity:1;}
+.ttt{font-size:.38rem;letter-spacing:.2em;color:var(--mut);margin-bottom:2px;}
+.ttn{font-size:.58rem;color:#fff;font-weight:600;}
+.ttm{font-size:.48rem;color:var(--mut);margin-top:2px;}
+
+/* POPUP */
+#pop{position:fixed;z-index:250;background:rgba(0,4,14,.97);border:1px solid var(--bord);width:280px;opacity:0;pointer-events:none;transform:scale(.94) translateY(8px);transition:all .18s cubic-bezier(.34,1.4,.64,1);backdrop-filter:blur(14px);}
+#pop::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--c);box-shadow:0 0 6px var(--c);}
+#pop.show{opacity:1;pointer-events:all;transform:scale(1) translateY(0);}
+.pop-stripe{height:2px;}
+.pop-inner{padding:11px 13px 13px;}
+.pop-type{font-size:.4rem;letter-spacing:.24em;color:var(--mut);margin-bottom:2px;}
+.pop-name{font-family:'Orbitron',monospace;font-size:.64rem;font-weight:600;color:#fff;line-height:1.35;margin-bottom:9px;}
+.pop-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(0,229,255,.07);font-size:.48rem;}
+.pop-row:last-child{border:none;}
+.pop-k{color:var(--mut);}
+.pop-v{color:rgba(0,229,255,.85);}
+.pop-bar-wrap{margin-top:9px;}
+.pop-bar-label{font-size:.38rem;letter-spacing:.16em;color:var(--mut);margin-bottom:3px;}
+.pop-bar-bg{height:2px;background:rgba(0,229,255,.05);}
+.pop-bar-fill{height:100%;width:0%;transition:width .5s ease .1s;}
+#pop-close{position:absolute;top:7px;right:7px;background:transparent;border:1px solid rgba(0,229,255,.12);color:var(--mut);width:15px;height:15px;cursor:pointer;font-size:.48rem;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+#pop-close:hover{border-color:var(--r);color:var(--r);}
+
+/* LOADING */
+#loading{position:fixed;inset:0;z-index:500;background:rgba(0,3,8,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.load-ring{width:60px;height:60px;border:2px solid rgba(0,229,255,.1);border-top-color:var(--c);border-radius:50%;animation:spin 1s linear infinite;box-shadow:0 0 20px rgba(0,229,255,.2);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-text{font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:.2em;color:var(--c);text-shadow:0 0 10px var(--c);}
+.load-sub{font-size:.5rem;letter-spacing:.12em;color:var(--mut);}
+
+/* HISTORY PANEL */
+#hist-panel{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);width:min(820px,96vw);background:rgba(0,4,14,.97);border:1px solid var(--bord);z-index:200;display:none;backdrop-filter:blur(14px);animation:slideup .28s ease;}
+#hist-panel.open{display:block;}
+@keyframes slideup{from{opacity:0;transform:translateX(-50%) translateY(18px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+#hist-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--c),transparent);box-shadow:0 0 8px var(--c);}
+#hist-header{display:flex;align-items:center;gap:10px;padding:8px 14px 6px;border-bottom:1px solid var(--bord);}
+.hist-title{font-family:'Orbitron',monospace;font-size:.55rem;font-weight:700;letter-spacing:.15em;color:var(--c);text-shadow:0 0 8px var(--c);flex:1;}
+#hist-year-badge{font-family:'Orbitron',monospace;font-size:.95rem;font-weight:900;color:var(--c);text-shadow:0 0 12px var(--c);min-width:50px;text-align:right;}
+#hist-body{display:grid;grid-template-columns:1fr 260px;gap:0;padding:10px 14px 12px;column-gap:16px;}
+#hist-timeline-wrap{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+#hist-year-start,#hist-year-end{font-family:'Orbitron',monospace;font-size:.5rem;color:var(--mut);flex-shrink:0;}
+#hist-slider{flex:1;-webkit-appearance:none;height:3px;background:rgba(0,229,255,.12);border-radius:2px;outline:none;cursor:pointer;}
+#hist-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#000;border:2px solid var(--c);box-shadow:0 0 8px var(--c),0 0 16px rgba(0,229,255,.4);cursor:grab;}
+#hist-slider::-webkit-slider-runnable-track{background:linear-gradient(90deg,rgba(0,229,255,.4) var(--hp,50%),rgba(0,229,255,.08) var(--hp,50%));border-radius:2px;height:3px;}
+#hist-dots{display:flex;align-items:center;gap:5px;flex-wrap:wrap;align-content:flex-start;min-height:52px;}
+.hdot{width:8px;height:8px;border-radius:50%;cursor:pointer;border:1px solid rgba(0,0,0,0);transition:all .12s;flex-shrink:0;}
+.hdot:hover,.hdot.active{transform:scale(1.6);box-shadow:0 0 8px currentColor;z-index:1;}
+.hdot.active{border-color:rgba(255,255,255,.5);}
+#hev-badge{display:inline-block;font-size:.42rem;letter-spacing:.18em;padding:2px 7px;border:1px solid currentColor;margin-bottom:6px;}
+#hev-title{font-family:'Orbitron',monospace;font-size:.7rem;font-weight:700;color:#fff;line-height:1.35;margin-bottom:5px;text-shadow:0 0 6px rgba(255,255,255,.3);}
+#hev-meta{font-size:.48rem;letter-spacing:.06em;color:var(--mut);margin-bottom:6px;}
+#hev-desc{font-size:.5rem;line-height:1.6;color:rgba(0,229,255,.6);margin-bottom:9px;max-height:58px;overflow:hidden;}
+#hev-link{display:inline-flex;align-items:center;font-family:'Orbitron',monospace;font-size:.44rem;letter-spacing:.12em;color:var(--c);text-decoration:none;border:1px solid rgba(0,229,255,.3);padding:4px 10px;transition:all .15s;}
+#hev-link:hover{background:rgba(0,229,255,.1);border-color:var(--c);box-shadow:0 0 8px rgba(0,229,255,.3);}
+
+@media(max-width:640px){#hist-panel{width:96vw;}#hist-body{grid-template-columns:1fr;}#hev-link{font-size:.4rem;}}
+
+/* ══ LEARN PANEL ══ */
+#learn-panel{position:fixed;top:54px;right:0;width:min(600px,96vw);height:calc(100vh - 54px);background:rgba(0,3,10,.97);border-left:1px solid var(--bord);z-index:180;display:none;flex-direction:column;backdrop-filter:blur(16px);overflow:hidden;animation:slidein .22s ease;}
+#learn-panel.open{display:flex;}
+@keyframes slidein{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+#learn-header{padding:10px 14px 0;border-bottom:1px solid var(--bord);flex-shrink:0;}
+.learn-title{font-family:'Orbitron',monospace;font-size:.52rem;font-weight:700;letter-spacing:.14em;color:var(--c);text-shadow:0 0 8px var(--c);display:block;margin-bottom:8px;}
+#learn-tabs{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;}
+.ltab{background:transparent;border:1px solid rgba(0,229,255,.12);color:var(--mut);font-family:'Share Tech Mono',monospace;font-size:.38rem;letter-spacing:.08em;padding:3px 7px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.ltab:hover,.ltab.active{border-color:var(--c);color:var(--c);background:rgba(0,229,255,.08);}
+#learn-body{display:grid;grid-template-columns:180px 1fr;flex:1;overflow:hidden;}
+#learn-left{padding:14px;border-right:1px solid var(--bord);display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+#learn-right{padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+#learn-icon-wrap{text-align:center;font-size:2.8rem;line-height:1;filter:drop-shadow(0 0 12px rgba(0,229,255,.5));}
+#learn-name{font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;color:#fff;text-align:center;text-shadow:0 0 6px rgba(255,255,255,.3);}
+#learn-scale-label,#learn-fact-label{font-size:.38rem;letter-spacing:.18em;color:var(--mut);}
+#learn-scale{font-size:.46rem;line-height:1.7;color:rgba(0,229,255,.7);}
+#learn-fact{font-size:.48rem;line-height:1.65;color:#fff;background:rgba(0,229,255,.05);border-left:2px solid var(--c);padding:6px 8px;font-style:italic;}
+.learn-section-title{font-family:'Orbitron',monospace;font-size:.42rem;letter-spacing:.16em;color:var(--c);text-shadow:0 0 6px var(--c);border-bottom:1px solid rgba(0,229,255,.12);padding-bottom:3px;}
+#learn-what,#learn-why,#learn-safety,#learn-impact{font-size:.48rem;line-height:1.75;color:rgba(0,229,255,.72);}
+#learn-safety{color:rgba(255,200,100,.8);}
+#learn-impact{color:rgba(180,255,180,.75);}
+@media(max-width:640px){#learn-body{grid-template-columns:1fr;}#learn-left{border-right:none;border-bottom:1px solid var(--bord);}}
+
+/* ══ BREAKING NEWS ══ */
+#breaking{position:fixed;top:54px;left:50%;transform:translateX(-50%) translateY(-120px);z-index:600;background:rgba(10,0,0,.98);border:1px solid #ef4444;border-top:3px solid #ef4444;padding:12px 20px 12px 16px;display:flex;align-items:center;gap:14px;min-width:360px;max-width:680px;width:90vw;transition:transform .4s cubic-bezier(.34,1.4,.64,1);box-shadow:0 0 40px rgba(239,68,68,.4),0 0 80px rgba(239,68,68,.15);}
+#breaking.show{transform:translateX(-50%) translateY(0);}
+#brk-pulse{width:12px;height:12px;border-radius:50%;background:#ef4444;box-shadow:0 0 12px #ef4444;flex-shrink:0;animation:brkpulse 0.8s ease-in-out infinite alternate;}
+@keyframes brkpulse{from{opacity:1;transform:scale(1)}to{opacity:.3;transform:scale(.7)}}
+#brk-inner{flex:1;}
+#brk-tag{font-family:'Orbitron',monospace;font-size:.42rem;font-weight:700;letter-spacing:.18em;color:#ef4444;margin-bottom:3px;}
+#brk-title{font-family:'Orbitron',monospace;font-size:.75rem;font-weight:700;color:#fff;line-height:1.3;margin-bottom:4px;text-shadow:0 0 8px rgba(255,255,255,.3);}
+#brk-stats{font-size:.52rem;color:#fca5a5;letter-spacing:.05em;}
+#brk-sub{font-size:.38rem;letter-spacing:.18em;color:rgba(239,68,68,.6);margin-top:3px;}
+#brk-close{background:transparent;border:1px solid rgba(239,68,68,.3);color:#ef4444;font-family:'Share Tech Mono',monospace;font-size:.4rem;padding:4px 8px;cursor:pointer;white-space:nowrap;transition:all .12s;}
+#brk-close:hover{background:rgba(239,68,68,.15);}
+
+/* ══ DAILY BRIEFING ══ */
+#briefing{position:fixed;top:54px;left:50%;transform:translateX(-50%);width:min(760px,95vw);max-height:calc(100vh - 80px);background:rgba(0,3,10,.98);border:1px solid var(--bord);border-top:2px solid var(--c);z-index:400;display:none;flex-direction:column;backdrop-filter:blur(16px);box-shadow:0 0 60px rgba(0,100,200,.2);animation:brfgslide .25s ease;}
+#briefing.open{display:flex;}
+@keyframes brfgslide{from{opacity:0;transform:translateX(-50%) translateY(-14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+#brfg-header{display:flex;align-items:center;gap:12px;padding:10px 16px 8px;border-bottom:1px solid var(--bord);flex-shrink:0;}
+#brfg-title{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;letter-spacing:.14em;color:var(--c);text-shadow:0 0 8px var(--c);}
+#brfg-date{font-size:.45rem;letter-spacing:.08em;color:var(--mut);}
+#brfg-body{padding:16px;overflow-y:auto;}
+#brfg-lead{font-family:'Orbitron',monospace;font-size:.62rem;font-weight:700;color:#fff;line-height:1.45;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bord);text-shadow:0 0 6px rgba(255,255,255,.2);}
+#brfg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:14px;}
+.brfg-card{background:rgba(0,229,255,.03);border:1px solid var(--bord);border-left:3px solid;padding:9px 11px;}
+.brfg-card-type{font-size:.38rem;letter-spacing:.2em;color:var(--mut);margin-bottom:3px;}
+.brfg-card-title{font-size:.54rem;color:#fff;font-weight:600;line-height:1.3;margin-bottom:4px;}
+.brfg-card-stat{font-size:.46rem;color:var(--c);opacity:.8;}
+#brfg-footer{font-size:.4rem;letter-spacing:.08em;color:rgba(0,229,255,.25);text-align:center;border-top:1px solid var(--bord);padding-top:10px;}
+
+/* ══ SHARE CARD ══ */
+#share-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:700;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+#share-overlay.open{display:flex;}
+.share-card-inner{background:#000c1a;border:1px solid rgba(0,229,255,.3);width:340px;overflow:hidden;position:relative;box-shadow:0 0 60px rgba(0,100,255,.3);}
+#share-stripe{height:3px;background:linear-gradient(90deg,#00e5ff,#0070ff,#00e5ff);}
+#share-header{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px 0;}
+#share-logo{font-family:'Orbitron',monospace;font-size:.9rem;font-weight:900;color:var(--c);text-shadow:0 0 12px var(--c);letter-spacing:.2em;}
+#share-sub{font-size:.38rem;letter-spacing:.16em;color:var(--mut);}
+#share-icon-wrap{text-align:center;font-size:3.5rem;padding:14px 0 4px;filter:drop-shadow(0 0 16px rgba(0,229,255,.5));}
+#share-event-name{font-family:'Orbitron',monospace;font-size:.68rem;font-weight:700;color:#fff;text-align:center;padding:0 16px;line-height:1.35;text-shadow:0 0 8px rgba(255,255,255,.3);}
+#share-stats-row{display:flex;border-top:1px solid var(--bord);border-bottom:1px solid var(--bord);margin:12px 0;}
+.share-stat{flex:1;text-align:center;padding:8px 4px;border-right:1px solid var(--bord);}
+.share-stat:last-child{border:none;}
+.ss-val{font-family:'Orbitron',monospace;font-size:.68rem;font-weight:700;color:var(--c);}
+.ss-label{font-size:.36rem;letter-spacing:.16em;color:var(--mut);margin-top:2px;}
+#share-fact{font-size:.44rem;line-height:1.6;color:rgba(0,229,255,.6);padding:0 16px 10px;text-align:center;font-style:italic;}
+#share-url{text-align:center;font-family:'Orbitron',monospace;font-size:.38rem;letter-spacing:.14em;color:rgba(0,229,255,.3);padding-bottom:12px;}
+#share-actions{display:flex;gap:5px;padding:10px 14px 14px;border-top:1px solid var(--bord);flex-wrap:wrap;}
+#share-actions .cb{flex:1;min-width:60px;text-align:center;font-size:.42rem;padding:5px 4px;}
+
+/* ══ HEATMAP indicator ══ */
+#heatmap-label{position:fixed;top:60px;right:16px;font-family:'Orbitron',monospace;font-size:.42rem;letter-spacing:.14em;color:#ff9800;text-shadow:0 0 8px #ff9800;display:none;animation:heatpulse 2s ease-in-out infinite;}
+@keyframes heatpulse{0%,100%{opacity:.6}50%{opacity:1}}
+#heatmap-label.show{display:block;}
+
+/* ══ AGE MODE badge ══ */
+#age-badge{position:fixed;top:60px;left:50%;transform:translateX(-50%);font-family:'Orbitron',monospace;font-size:.4rem;letter-spacing:.16em;color:#a78bff;text-shadow:0 0 8px #a78bff;padding:3px 10px;border:1px solid rgba(167,139,255,.3);background:rgba(0,0,0,.8);display:none;z-index:50;}
+#age-badge.show{display:block;}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="load-ring"></div>
+  <div class="load-text">NEXUS INITIALIZING</div>
+  <div class="load-sub" id="load-sub">FETCHING WORLD TOPOLOGY...</div>
+</div>
+
+<canvas id="c"></canvas>
+<div class="hc hc-tl"></div><div class="hc hc-tr"></div>
+<div class="hc hc-bl"></div><div class="hc hc-br"></div>
+
+<!-- TOP BAR -->
+<div id="top">
+  <div class="logo">
+    <div class="logo-title">NEXUS</div>
+    <div class="logo-sub">GLOBAL HAZARD THREAT MONITOR</div>
+  </div>
+  <div class="tdiv"></div>
+  <div class="tst"><div class="tst-l">ACTIVE EVENTS</div><div class="tst-v" id="ts-ev">—</div></div>
+  <div class="tdiv"></div>
+  <div class="tst"><div class="tst-l">CRITICAL ZONES</div><div class="tst-v" id="ts-cr" style="color:var(--r);text-shadow:0 0 6px var(--r)">—</div></div>
+  <div class="tdiv"></div>
+  <div class="tst"><div class="tst-l">LAST UPDATE</div><div class="tst-v" id="ts-tm" style="font-size:.58rem">—</div></div>
+  <div class="tdiv"></div>
+  <div class="tst"><div class="tst-l">NEXT UPDATE</div><div class="tst-v" id="ts-next" style="font-size:.58rem;color:#eab308;text-shadow:0 0 6px #eab308">—</div></div>
+  <div class="tsp"></div>
+  <div id="live"><div class="lpulse"></div><span id="live-txt">INITIALIZING...</span></div>
+  <div class="threat-wrap">
+    <span class="tbl">THREAT INDEX</span>
+    <div class="tbb"><div id="tbi"></div></div>
+    <div class="tbv" id="tbn" style="color:var(--c)">—</div>
+  </div>
+</div>
+
+<!-- LEFT -->
+<div id="lp"><div class="pt">HAZARD LAYERS</div></div>
+
+<!-- RIGHT -->
+<div id="rp">
+  <div class="pt" style="text-align:right">INTEL SUMMARY</div>
+  <div class="sc"><div class="sc-l">ACTIVE EVENTS</div><div class="sc-v" id="sc1">—</div></div>
+  <div class="sc"><div class="sc-l">CRITICAL ZONES</div><div class="sc-v red" id="sc2">—</div></div>
+  <div class="sc"><div class="sc-l">TYPES ACTIVE</div><div class="sc-v" id="sc3">—</div></div>
+  <div class="sc"><div class="sc-l">HOTTEST REGION</div><div class="sc-v sm" id="sc4">—</div></div>
+</div>
+
+<!-- MAG FILTER -->
+<div id="magp">
+  <div class="mpt">MIN MAGNITUDE</div>
+  <input type="range" id="mag-range" min="0" max="8" step="0.5" value="0">
+  <div id="mag-val">M 0.0+</div>
+</div>
+
+<!-- ZOOM DISPLAY -->
+<div id="zoomd">ZOOM <span id="zoom-val">1.0×</span></div>
+
+<!-- LEGEND -->
+<div id="legend">
+  <div class="lt">MAGNITUDE SCALE</div>
+  <div class="lr"><div class="ld" style="width:12px;height:12px;background:#ef4444;box-shadow:0 0 5px #ef4444"></div>8.0+ Extreme</div>
+  <div class="lr"><div class="ld" style="width:9px;height:9px;background:#f97316;box-shadow:0 0 4px #f97316"></div>7.0 – 7.9 Major</div>
+  <div class="lr"><div class="ld" style="width:7px;height:7px;background:#eab308;box-shadow:0 0 3px #eab308"></div>6.0 – 6.9 Strong</div>
+  <div class="lr"><div class="ld" style="width:5px;height:5px;background:#22c55e;box-shadow:0 0 3px #22c55e"></div>&lt; 6.0</div>
+  <div class="lsep"></div>
+  <div class="lt">OTHER HAZARDS</div>
+  <div class="lr"><div class="ld" style="width:6px;height:6px;background:#ff5722"></div>Wildfire</div>
+  <div class="lr"><div class="ld" style="width:6px;height:6px;background:#e91e63"></div>Volcano</div>
+  <div class="lr"><div class="ld" style="width:6px;height:6px;background:#a78bff"></div>Storm</div>
+  <div class="lr"><div class="ld" style="width:6px;height:6px;background:#29b6f6"></div>Flood</div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div id="hist-panel">
+  <div id="hist-header">
+    <span class="hist-title">◈ CHRONOLOGICAL HAZARD ARCHIVE</span>
+    <span id="hist-year-badge">1900</span>
+    <button id="hist-close" class="cb" style="padding:2px 7px;font-size:.4rem">✕ CLOSE</button>
+  </div>
+  <div id="hist-body">
+    <div id="hist-timeline-wrap">
+      <div id="hist-year-start">1900</div>
+      <input type="range" id="hist-slider" min="0" max="100" value="100" step="1">
+      <div id="hist-year-end">2025</div>
+    </div>
+    <div id="hist-event-card">
+      <div id="hev-badge"></div>
+      <div id="hev-title"></div>
+      <div id="hev-meta"></div>
+      <div id="hev-desc"></div>
+      <a id="hev-link" href="#" target="_blank" rel="noopener">READ FULL HISTORY →</a>
+    </div>
+    <div id="hist-dots"></div>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div class="tk-label">NEXUS ALERT</div>
+  <div class="tk-scroll"><div id="tk-inner">LOADING DATA FEED...</div></div>
+</div>
+
+<!-- CONTROLS -->
+<div id="ctrl">
+  <button class="cb on" id="bOrb">⟳ ORBIT</button>
+  <button class="cb on" id="bPulse">◉ PULSE</button>
+  <button class="cb on" id="bDepth">⬨ DEPTH</button>
+  <div class="csep"></div>
+  <button class="cb" id="bPac">⬡ PACIFIC RIM</button>
+  <button class="cb" id="bAtl">⬡ ATLANTIC</button>
+  <button class="cb" id="bEur">⬡ EURASIA</button>
+  <div class="csep"></div>
+  <button class="cb" id="bZi">⊕ ZOOM IN</button>
+  <button class="cb" id="bZo">⊖ ZOOM OUT</button>
+  <button class="cb" id="bRst">⌖ RESET</button>
+  <div class="csep"></div>
+  <button class="cb" id="bHist">◈ HISTORY</button>
+  <button class="cb" id="bLearn">🎓 LEARN</button>
+  <button class="cb" id="bPlates">⬡ PLATES</button>
+  <button class="cb" id="bBrief">📋 BRIEFING</button>
+  <button class="cb" id="bHeat">◉ HEATMAP</button>
+  <button class="cb" id="bAge">👤 AGE: ALL</button>
+  <button class="cb" id="bMusic">♪ MUSIC</button>
+</div>
+
+<div id="tt"><div class="ttt" id="tt-type"></div><div class="ttn" id="tt-name"></div><div class="ttm" id="tt-meta"></div></div>
+
+<div id="pop">
+  <div class="pop-stripe" id="pop-stripe"></div>
+  <button id="pop-close">✕</button>
+  <div class="pop-inner">
+    <div class="pop-type" id="pop-type"></div>
+    <div class="pop-name" id="pop-name"></div>
+    <div class="pop-row"><span class="pop-k">COORDINATES</span><span class="pop-v" id="pop-coords">—</span></div>
+    <div class="pop-row"><span class="pop-k">DEPTH</span><span class="pop-v" id="pop-depth">—</span></div>
+    <div class="pop-row"><span class="pop-k">DETECTED</span><span class="pop-v" id="pop-date">—</span></div>
+    <div class="pop-row"><span class="pop-k">SOURCE</span><span class="pop-v" id="pop-src">—</span></div>
+    <div class="pop-bar-wrap">
+      <div class="pop-bar-label">THREAT INTENSITY</div>
+      <div class="pop-bar-bg"><div class="pop-bar-fill" id="pop-bar"></div></div>
+    </div>
+    <button id="pop-share" style="margin-top:9px;width:100%;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.25);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:.44rem;letter-spacing:.12em;padding:5px;cursor:pointer;transition:all .14s;">📤 SHARE THIS EVENT</button>
+  </div>
+</div>
+
+<!-- ══ BREAKING NEWS ALERT ══ -->
+<div id="breaking">
+  <div id="brk-pulse"></div>
+  <div id="brk-inner">
+    <div id="brk-tag">🚨 BREAKING — MAJOR SEISMIC EVENT</div>
+    <div id="brk-title"></div>
+    <div id="brk-stats"></div>
+    <div id="brk-sub">NEXUS REAL-TIME ALERT</div>
+  </div>
+  <button id="brk-close">DISMISS ✕</button>
+</div>
+
+<!-- ══ DAILY BRIEFING ══ -->
+<div id="briefing">
+  <div id="brfg-header">
+    <span id="brfg-title">📋 GLOBAL HAZARD BRIEFING</span>
+    <span id="brfg-date"></span>
+    <button id="brfg-close" class="cb" style="padding:2px 7px;font-size:.4rem;margin-left:auto">✕</button>
+  </div>
+  <div id="brfg-body">
+    <div id="brfg-lead"></div>
+    <div id="brfg-grid"></div>
+    <div id="brfg-footer">Data sourced from USGS & NASA EONET · NEXUS Global Hazard Monitor</div>
+  </div>
+</div>
+
+<!-- ══ SHARE CARD ══ -->
+<div id="share-overlay">
+  <div id="share-card" class="share-card-inner">
+    <div id="share-stripe"></div>
+    <div id="share-header">
+      <span id="share-logo">NEXUS</span>
+      <span id="share-sub">GLOBAL HAZARD MONITOR</span>
+    </div>
+    <div id="share-icon-wrap"><span id="share-icon"></span></div>
+    <div id="share-event-name"></div>
+    <div id="share-stats-row">
+      <div class="share-stat"><div class="ss-val" id="ss-mag">—</div><div class="ss-label">MAGNITUDE</div></div>
+      <div class="share-stat"><div class="ss-val" id="ss-depth">—</div><div class="ss-label">DEPTH</div></div>
+      <div class="share-stat"><div class="ss-val" id="ss-coords">—</div><div class="ss-label">LOCATION</div></div>
+    </div>
+    <div id="share-fact"></div>
+    <div id="share-url">nexus-hazard.earth</div>
+    <div id="share-actions">
+      <button class="cb" id="share-copy">📋 COPY TEXT</button>
+      <button class="cb" id="share-img">🖼 SAVE IMAGE</button>
+      <button class="cb" id="share-tw">𝕏 POST</button>
+      <button class="cb" id="share-dismiss">✕ CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEARN PANEL -->
+<div id="learn-panel">
+  <div id="learn-header">
+    <span class="learn-title">🎓 HAZARD EDUCATION CENTER</span>
+    <div id="learn-tabs">
+      <button class="ltab active" data-hz="earthquakes">EARTHQUAKE</button>
+      <button class="ltab" data-hz="volcanoes">VOLCANO</button>
+      <button class="ltab" data-hz="severeStorms">STORM</button>
+      <button class="ltab" data-hz="wildfires">WILDFIRE</button>
+      <button class="ltab" data-hz="floods">FLOOD</button>
+      <button class="ltab" data-hz="dustHaze">DUST/HAZE</button>
+      <button class="ltab" data-hz="landslides">LANDSLIDE</button>
+      <button class="ltab" data-hz="seaLakeIce">ICE EVENT</button>
+    </div>
+    <button id="learn-close" class="cb" style="padding:2px 7px;font-size:.4rem;margin-left:auto">✕</button>
+  </div>
+  <div id="learn-body">
+    <div id="learn-left">
+      <div id="learn-icon-wrap"><span id="learn-icon"></span></div>
+      <div id="learn-name"></div>
+      <div id="learn-scale-label">MEASUREMENT SCALE</div>
+      <div id="learn-scale"></div>
+      <div id="learn-fact-label">DID YOU KNOW?</div>
+      <div id="learn-fact"></div>
+    </div>
+    <div id="learn-right">
+      <div class="learn-section-title">WHAT IS IT?</div>
+      <div id="learn-what"></div>
+      <div class="learn-section-title">WHY DOES IT HAPPEN?</div>
+      <div id="learn-why"></div>
+      <div class="learn-section-title">SAFETY & PREPAREDNESS</div>
+      <div id="learn-safety"></div>
+      <div class="learn-section-title">GLOBAL IMPACT</div>
+      <div id="learn-impact"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Age badge + heatmap label -->
+<div id="age-badge"></div>
+<div id="heatmap-label">◉ HEATMAP MODE</div>
+
+<!-- D3 + TopoJSON from cdnjs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════
+   NEXUS v3 — Rebuilt with D3-geo orthographic projection
+   Correct hemisphere clipping, real GeoJSON world data
+   Mouse wheel + pinch zoom, drag rotation
+════════════════════════════════════════════════ */
+
+/* ── Hazard config ── */
+const HZ = {
+  earthquakes:  {label:'EARTHQUAKE',  icon:'⚡', hex:'#ffc107', spd:2.2},
+  wildfires:    {label:'WILDFIRE',    icon:'🔥', hex:'#ff5722', spd:1.8},
+  volcanoes:    {label:'VOLCANO',     icon:'🌋', hex:'#e91e63', spd:0.9},
+  severeStorms: {label:'STORM',       icon:'🌀', hex:'#a78bff', spd:2.0},
+  floods:       {label:'FLOOD',       icon:'💧', hex:'#29b6f6', spd:1.3},
+  seaLakeIce:   {label:'ICE EVENT',   icon:'🧊', hex:'#80deea', spd:0.7},
+  dustHaze:     {label:'DUST/HAZE',   icon:'🌫', hex:'#bcaaa4', spd:0.9},
+  landslides:   {label:'LANDSLIDE',   icon:'🏔', hex:'#66bb6a', spd:1.1},
+};
+
+function quakeColor(m){if(!m)return'#22c55e';if(m>=8)return'#ef4444';if(m>=7)return'#f97316';if(m>=6)return'#eab308';return'#22c55e';}
+function quakeR(m){if(!m)return 2.5;if(m>=8)return 9;if(m>=7)return 6.5;if(m>=6)return 4.5;if(m>=5)return 3.5;return 2.5;}
+
+/* ── Fallback dataset — rich global coverage for all hazard types ── */
+const N=Date.now(),D=86400000;
+const FALLBACK=[
+  /* EARTHQUAKES — global ring of fire + major fault zones */
+  {lat:37.5,lng:141.5,type:'earthquakes',title:'Off the Coast of Honshu, Japan',mag:6.8,depth:42,date:N-D*.5,src:'USGS'},
+  {lat:-17.8,lng:-178.4,type:'earthquakes',title:'South of Fiji Islands',mag:7.3,depth:590,date:N-D*2,src:'USGS'},
+  {lat:36.0,lng:36.5,type:'earthquakes',title:'Southern Turkey / Syria Border',mag:7.8,depth:18,date:N-D*180,src:'USGS'},
+  {lat:24.1,lng:121.6,type:'earthquakes',title:'Eastern Taiwan',mag:7.4,depth:35,date:N-D*21,src:'USGS'},
+  {lat:52.1,lng:179.6,type:'earthquakes',title:'Andreanof Islands, Alaska',mag:5.9,depth:33,date:N-D*2.5,src:'USGS'},
+  {lat:-33.5,lng:-70.6,type:'earthquakes',title:'Central Chile',mag:6.2,depth:88,date:N-D*1.4,src:'USGS'},
+  {lat:-10.9,lng:161.3,type:'earthquakes',title:'Solomon Islands',mag:6.7,depth:20,date:N-D*4.5,src:'USGS'},
+  {lat:38.9,lng:40.8,type:'earthquakes',title:'Eastern Turkey',mag:6.1,depth:7,date:N-D*3.5,src:'USGS'},
+  {lat:0.5,lng:125.4,type:'earthquakes',title:'Sulawesi, Indonesia',mag:5.8,depth:45,date:N-D*4,src:'USGS'},
+  {lat:28.3,lng:84.7,type:'earthquakes',title:'Nepal — Himalayan Thrust',mag:5.5,depth:10,date:N-D*3,src:'USGS'},
+  {lat:-23.3,lng:-68.2,type:'earthquakes',title:'Antofagasta Region, Chile',mag:5.7,depth:188,date:N-D*6.5,src:'USGS'},
+  {lat:36.1,lng:70.2,type:'earthquakes',title:'Hindu Kush Region',mag:5.3,depth:210,date:N-D*7,src:'USGS'},
+  {lat:-6.2,lng:154.9,type:'earthquakes',title:'Bougainville, PNG',mag:6.4,depth:55,date:N-D*7.8,src:'USGS'},
+  {lat:-7.6,lng:130.0,type:'earthquakes',title:'Banda Sea',mag:6.1,depth:420,date:N-D*15,src:'USGS'},
+  {lat:47.6,lng:153.2,type:'earthquakes',title:'Kuril Islands',mag:5.7,depth:60,date:N-D*20,src:'USGS'},
+  {lat:45.9,lng:26.5,type:'earthquakes',title:'Romania — Vrancea Zone',mag:4.5,depth:140,date:N-D*18,src:'USGS'},
+  {lat:40.8,lng:-124.3,type:'earthquakes',title:'Northern California',mag:4.9,depth:18,date:N-D*5,src:'USGS'},
+  {lat:-20.3,lng:-176.2,type:'earthquakes',title:'Tonga Trench',mag:6.0,depth:165,date:N-D*12,src:'USGS'},
+  {lat:32.0,lng:50.0,type:'earthquakes',title:'Zagros Mountains, Iran',mag:5.4,depth:20,date:N-D*17,src:'USGS'},
+  {lat:18.4,lng:-66.9,type:'earthquakes',title:'Puerto Rico Trench',mag:4.4,depth:14,date:N-D*6,src:'USGS'},
+  {lat:30.6,lng:69.4,type:'earthquakes',title:'Western Pakistan',mag:4.8,depth:30,date:N-D*14,src:'USGS'},
+  {lat:-15.4,lng:-73.1,type:'earthquakes',title:'Arequipa Region, Peru',mag:5.5,depth:110,date:N-D*19,src:'USGS'},
+  {lat:41.4,lng:79.5,type:'earthquakes',title:'Kyrgyzstan',mag:5.8,depth:25,date:N-D*13,src:'USGS'},
+  {lat:60.1,lng:-152.7,type:'earthquakes',title:'Southern Alaska',mag:5.3,depth:90,date:N-D*8,src:'USGS'},
+  {lat:44.3,lng:148.0,type:'earthquakes',title:'Kuril Islands (NE)',mag:5.6,depth:45,date:N-D*9,src:'USGS'},
+  {lat:34.5,lng:25.1,type:'earthquakes',title:'Crete, Greece',mag:4.7,depth:30,date:N-D*16,src:'USGS'},
+  {lat:-38.1,lng:-73.4,type:'earthquakes',title:'Biobío Region, Chile',mag:5.1,depth:22,date:N-D*11,src:'USGS'},
+  {lat:6.5,lng:126.5,type:'earthquakes',title:'Mindanao, Philippines',mag:5.9,depth:50,date:N-D*10,src:'USGS'},
+  /* VOLCANOES — active globally */
+  {lat:-8.3,lng:115.5,type:'volcanoes',title:'Agung — Bali, Indonesia',depth:3,date:N-D*.8,src:'EONET'},
+  {lat:19.4,lng:-155.3,type:'volcanoes',title:'K\u012Blauea \u2014 Hawai\u02BBi, USA',depth:2,date:N-D*1.5,src:'EONET'},
+  {lat:38.8,lng:15.2,type:'volcanoes',title:'Stromboli — Aeolian Islands, Italy',depth:3,date:N-D*2,src:'EONET'},
+  {lat:-6.1,lng:105.4,type:'volcanoes',title:'Anak Krakatau — Sunda Strait',depth:4,date:N-D*3.2,src:'EONET'},
+  {lat:14.0,lng:-90.9,type:'volcanoes',title:'Fuego — Guatemala',depth:3,date:N-D*4.8,src:'EONET'},
+  {lat:51.7,lng:179.6,type:'volcanoes',title:'Great Sitkin — Alaska',depth:5,date:N-D*7.5,src:'EONET'},
+  {lat:63.6,lng:-19.6,type:'volcanoes',title:'Katla — Iceland',depth:6,date:N-D*9,src:'EONET'},
+  {lat:13.7,lng:40.7,type:'volcanoes',title:'Erta Ale — Ethiopia',depth:2,date:N-D*20,src:'EONET'},
+  {lat:-0.7,lng:-78.4,type:'volcanoes',title:'Reventador — Ecuador',depth:3,date:N-D*13,src:'EONET'},
+  {lat:7.5,lng:126.7,type:'volcanoes',title:'Taal — Philippines',depth:5,date:N-D*6.3,src:'EONET'},
+  {lat:-23.1,lng:-67.7,type:'volcanoes',title:'Láscar — Chile/Bolivia',depth:5,date:N-D*15,src:'EONET'},
+  {lat:1.4,lng:127.3,type:'volcanoes',title:'Dukono — Halmahera, Indonesia',depth:4,date:N-D*11,src:'EONET'},
+  {lat:64.4,lng:-17.3,type:'volcanoes',title:'Grímsvötn — Iceland',depth:3,date:N-D*22,src:'EONET'},
+  /* SEVERE STORMS */
+  {lat:15.2,lng:127.4,type:'severeStorms',title:'Typhoon MAWAR — Philippine Sea',depth:0,date:N-D*.3,src:'EONET'},
+  {lat:20.1,lng:-88.5,type:'severeStorms',title:'Hurricane — Gulf of Mexico',depth:0,date:N-D*1.8,src:'EONET'},
+  {lat:-14.6,lng:46.3,type:'severeStorms',title:'Cyclone FREDDY — Mozambique Channel',depth:0,date:N-D*4.2,src:'EONET'},
+  {lat:9.8,lng:161.2,type:'severeStorms',title:'Tropical Storm — Western Pacific',depth:0,date:N-D*6.1,src:'EONET'},
+  {lat:28.5,lng:-94.2,type:'severeStorms',title:'Hurricane — Northern Gulf',depth:0,date:N-D*8,src:'EONET'},
+  {lat:14.3,lng:71.1,type:'severeStorms',title:'Cyclone BIPORJOY — Arabian Sea',depth:0,date:N-D*14,src:'EONET'},
+  {lat:-18.4,lng:176.1,type:'severeStorms',title:'Cyclone — Coral Sea, Fiji',depth:0,date:N-D*10,src:'EONET'},
+  {lat:12.5,lng:142.8,type:'severeStorms',title:'Super Typhoon — Mariana Islands',depth:0,date:N-D*18,src:'EONET'},
+  /* WILDFIRES */
+  {lat:34.2,lng:-118.6,type:'wildfires',title:'Palisades Complex — Los Angeles, CA',depth:0,date:N-D*.4,src:'FIRMS'},
+  {lat:47.8,lng:-120.3,type:'wildfires',title:'Okanogan Fire — Washington State',depth:0,date:N-D*1.2,src:'FIRMS'},
+  {lat:64.3,lng:-148.6,type:'wildfires',title:'Alaska Interior Complex',depth:0,date:N-D*2.8,src:'FIRMS'},
+  {lat:-32.8,lng:149.4,type:'wildfires',title:'NSW Outback Fire — Australia',depth:0,date:N-D*3.9,src:'FIRMS'},
+  {lat:38.4,lng:22.1,type:'wildfires',title:'Attica Wildfire — Greece',depth:0,date:N-D*13,src:'FIRMS'},
+  {lat:56.4,lng:100.2,type:'wildfires',title:'Siberian Taiga Fire — Russia',depth:0,date:N-D*19,src:'FIRMS'},
+  {lat:41.3,lng:-123.8,type:'wildfires',title:'Six Rivers Fire — N. California',depth:0,date:N-D*15,src:'FIRMS'},
+  {lat:36.5,lng:27.5,type:'wildfires',title:'Rhodes Island Fire — Greece',depth:0,date:N-D*22,src:'FIRMS'},
+  {lat:-34.5,lng:150.9,type:'wildfires',title:'Blue Mountains Fire — NSW',depth:0,date:N-D*27,src:'FIRMS'},
+  {lat:60.1,lng:65.4,type:'wildfires',title:'Western Siberia Fire Complex',depth:0,date:N-D*32,src:'FIRMS'},
+  {lat:-21.5,lng:119.8,type:'wildfires',title:'Pilbara Bushfire — Western Australia',depth:0,date:N-D*24,src:'FIRMS'},
+  {lat:38.6,lng:-9.2,type:'wildfires',title:'Setubal Fire — Portugal',depth:0,date:N-D*17,src:'FIRMS'},
+  /* FLOODS */
+  {lat:23.7,lng:90.4,type:'floods',title:'Brahmaputra Flooding — Bangladesh',depth:0,date:N-D*1,src:'EONET'},
+  {lat:5.6,lng:30.2,type:'floods',title:'Upper Nile Flooding — South Sudan',depth:0,date:N-D*2.3,src:'EONET'},
+  {lat:31.5,lng:72.3,type:'floods',title:'Punjab Monsoon Flood — Pakistan',depth:0,date:N-D*3.7,src:'EONET'},
+  {lat:43.6,lng:14.8,type:'floods',title:'Derna Flash Flood — Libya',depth:0,date:N-D*7.3,src:'EONET'},
+  {lat:30.1,lng:120.2,type:'floods',title:'Yangtze River Flooding — China',depth:0,date:N-D*23,src:'EONET'},
+  {lat:52.4,lng:4.9,type:'floods',title:'Rhine Basin Flooding — Netherlands',depth:0,date:N-D*5,src:'EONET'},
+  {lat:48.8,lng:2.3,type:'floods',title:'Seine River — France',depth:0,date:N-D*8.5,src:'EONET'},
+  {lat:15.3,lng:32.5,type:'floods',title:'Khartoum Floods — Sudan',depth:0,date:N-D*9,src:'EONET'},
+  {lat:-2.5,lng:28.8,type:'floods',title:'DRC River Flooding',depth:0,date:N-D*12,src:'EONET'},
+  {lat:16.8,lng:96.1,type:'floods',title:'Irrawaddy Delta — Myanmar',depth:0,date:N-D*14,src:'EONET'},
+  /* SEA/LAKE ICE */
+  {lat:76.5,lng:-75.4,type:'seaLakeIce',title:'Baffin Bay Sea Ice Anomaly',depth:0,date:N-D*1.6,src:'NSIDC'},
+  {lat:-72.4,lng:-20.6,type:'seaLakeIce',title:'Weddell Sea Iceberg Calving',depth:0,date:N-D*6.5,src:'NSIDC'},
+  {lat:79.5,lng:-70.0,type:'seaLakeIce',title:'Jakobshavn Glacier Retreat',depth:0,date:N-D*26,src:'NSIDC'},
+  {lat:70.2,lng:25.5,type:'seaLakeIce',title:'Barents Sea Ice Minimum',depth:0,date:N-D*11,src:'NSIDC'},
+  {lat:-67.5,lng:164.2,type:'seaLakeIce',title:'Ross Sea Antarctic Ice Shelf',depth:0,date:N-D*18,src:'NSIDC'},
+  {lat:74.1,lng:-100.0,type:'seaLakeIce',title:'Canadian Arctic Ice Loss',depth:0,date:N-D*30,src:'NSIDC'},
+  /* DUST/HAZE — Sahara, Arabia, Central Asia, East Asia, USA */
+  {lat:22.4,lng:14.5,type:'dustHaze',title:'Saharan Dust Outbreak — Central Sahara',depth:0,date:N-D*.6,src:'EONET'},
+  {lat:33.5,lng:44.1,type:'dustHaze',title:'Mesopotamia Dust Storm — Iraq',depth:0,date:N-D*2,src:'EONET'},
+  {lat:38.2,lng:116.4,type:'dustHaze',title:'Yellow Dust (Hwangsa) — N. China',depth:0,date:N-D*4.3,src:'EONET'},
+  {lat:25.3,lng:55.6,type:'dustHaze',title:'Arabian Peninsula Dust Event — UAE',depth:0,date:N-D*1.2,src:'EONET'},
+  {lat:18.5,lng:-15.8,type:'dustHaze',title:'Saharan Dust — Mauritania Coast',depth:0,date:N-D*3,src:'EONET'},
+  {lat:15.0,lng:20.0,type:'dustHaze',title:'Bodélé Depression Plume — Chad',depth:0,date:N-D*5.5,src:'EONET'},
+  {lat:40.5,lng:88.3,type:'dustHaze',title:'Taklamakan Desert Dust — China',depth:0,date:N-D*7,src:'EONET'},
+  {lat:32.2,lng:60.5,type:'dustHaze',title:'Sistan Basin Dust — Iran/Afghanistan',depth:0,date:N-D*8.5,src:'EONET'},
+  {lat:12.0,lng:-3.0,type:'dustHaze',title:'Sahel Dust Plume — Burkina Faso',depth:0,date:N-D*10,src:'EONET'},
+  {lat:36.0,lng:103.5,type:'dustHaze',title:'Loess Plateau Haze — N. China',depth:0,date:N-D*12,src:'EONET'},
+  {lat:27.5,lng:35.5,type:'dustHaze',title:'Red Sea Dust Plume — Saudi Arabia',depth:0,date:N-D*6,src:'EONET'},
+  {lat:30.0,lng:-8.0,type:'dustHaze',title:'Western Sahara Dust Outbreak',depth:0,date:N-D*15,src:'EONET'},
+  {lat:22.0,lng:46.0,type:'dustHaze',title:'Empty Quarter Haboob — Saudi Arabia',depth:0,date:N-D*9,src:'EONET'},
+  /* LANDSLIDES — mountains, monsoon zones, seismic regions */
+  {lat:27.6,lng:84.4,type:'landslides',title:'Gorkha Landslide — Nepal',depth:0,date:N-D*.9,src:'EONET'},
+  {lat:-4.5,lng:35.2,type:'landslides',title:'Rift Valley Slide — Tanzania',depth:0,date:N-D*4.6,src:'EONET'},
+  {lat:30.2,lng:107.8,type:'landslides',title:'Three Gorges Mudslide — China',depth:0,date:N-D*2.1,src:'EONET'},
+  {lat:4.5,lng:-75.7,type:'landslides',title:'Andean Mudflow — Colombia',depth:0,date:N-D*3.3,src:'EONET'},
+  {lat:14.2,lng:-87.5,type:'landslides',title:'Landslide — Honduras (Las Vegas)',depth:0,date:N-D*5.8,src:'EONET'},
+  {lat:35.3,lng:72.6,type:'landslides',title:'Gilgit-Baltistan Slide — Pakistan',depth:0,date:N-D*7.4,src:'EONET'},
+  {lat:-7.8,lng:112.8,type:'landslides',title:'Semeru Lahar — East Java',depth:0,date:N-D*9.2,src:'EONET'},
+  {lat:46.5,lng:8.1,type:'landslides',title:'Alpine Rockfall — Switzerland',depth:0,date:N-D*11.5,src:'EONET'},
+  {lat:37.5,lng:138.5,type:'landslides',title:'Post-Quake Slides — Niigata, Japan',depth:0,date:N-D*6.5,src:'EONET'},
+  {lat:26.5,lng:92.5,type:'landslides',title:'Assam Mudslide — NE India',depth:0,date:N-D*13,src:'EONET'},
+  {lat:-13.5,lng:-72.6,type:'landslides',title:'Cusco Landslide — Peru',depth:0,date:N-D*16,src:'EONET'},
+  {lat:38.5,lng:22.5,type:'landslides',title:'Thessaly Mudslide — Greece',depth:0,date:N-D*19,src:'EONET'},
+];
+
+/* ════════════════════════════════════════════════
+   CANVAS + D3 SETUP
+════════════════════════════════════════════════ */
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', () => { resize(); });
+
+/* D3 orthographic projection */
+const projection = d3.geoOrthographic()
+  .clipAngle(90)      // clip hemisphere — this is what prevents back-face artifacts
+  .precision(0.3);    // smooth clip boundary
+
+const pathGen = d3.geoPath().projection(projection).context(ctx);
+
+/* Graticule (grid lines) */
+const graticule20 = d3.geoGraticule().step([20, 20])();
+const graticule10 = d3.geoGraticule().step([10, 10])();
+const sphere = {type: 'Sphere'};
+
+/* ── Globe state ── */
+let rotation   = [-10, 0, 0]; // [lambda, phi, gamma] in degrees
+let zoomLevel  = 1.0;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 12;
+let velLon = 0, velLat = 0;
+let dragging = false, lastX = 0, lastY = 0;
+let autoOrbit = true, showPulse = true, showDepth = true;
+let minMag = 0;
+const activeTypes = new Set(Object.keys(HZ));
+let EVENTS = [...FALLBACK];
+
+/* Pinch zoom state */
+let pinchDist0 = 0, pinchZoom0 = 1;
+
+/* Computed radius */
+function globeRadius() {
+  return Math.min(W, H) * 0.4 * zoomLevel;
+}
+function globeCenter() {
+  return [W / 2, H / 2];
+}
+
+function updateProjection() {
+  const [cx, cy] = globeCenter();
+  projection
+    .scale(globeRadius())
+    .translate([cx, cy])
+    .rotate(rotation);
+}
+
+/* ── World topology ── */
+let worldLand     = null;
+let worldBorders  = null;
+let worldCountries = null;
+
+/* Stars */
+const STARS = Array.from({length:380}, () => ({
+  x: Math.random() * 6000 - 3000, y: Math.random() * 3500 - 1750,
+  r: Math.random() * 0.85 + 0.15,
+  a: Math.random() * 0.55 + 0.1,
+  tw: Math.random() * Math.PI * 2
+}));
+
+/* Animation time */
+let t = 0;
+
+/* Hit cache for hover/click */
+let hitCache = [];
+
+/* ════════════════════════════════════════════════
+   DRAWING FUNCTIONS
+════════════════════════════════════════════════ */
+
+function drawStars() {
+  STARS.forEach(s => {
+    const sx = ((s.x % W) + W) % W;
+    const sy = ((s.y % H) + H) % H;
+    const a  = s.a * (0.5 + 0.5 * Math.sin(t * 0.35 + s.tw));
+    ctx.beginPath();
+    ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,230,255,${a})`;
+    ctx.fill();
+  });
+}
+
+function drawGlobeBackground() {
+  const R  = globeRadius();
+  const cx = W / 2, cy = H / 2;
+
+  /* Outer halo */
+  const og = ctx.createRadialGradient(cx, cy, R * 0.82, cx, cy, R * 1.6);
+  og.addColorStop(0,   'rgba(0,80,200,0)');
+  og.addColorStop(0.5, 'rgba(0,60,160,0.07)');
+  og.addColorStop(1,   'rgba(0,30,100,0.28)');
+  ctx.beginPath(); ctx.arc(cx, cy, R * 1.6, 0, Math.PI * 2);
+  ctx.fillStyle = og; ctx.fill();
+
+  /* Atmosphere rim */
+  const atm = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.07);
+  atm.addColorStop(0,   'rgba(0,160,255,0)');
+  atm.addColorStop(0.6, 'rgba(0,100,255,0.18)');
+  atm.addColorStop(1,   'rgba(0,50,200,0.52)');
+  ctx.beginPath(); ctx.arc(cx, cy, R * 1.07, 0, Math.PI * 2);
+  ctx.fillStyle = atm; ctx.fill();
+
+  /* Ocean fill — use D3 sphere path for perfectly round clip */
+  const oc = ctx.createRadialGradient(cx - R*0.2, cy - R*0.15, 0, cx, cy, R);
+  oc.addColorStop(0,   '#0c1e3a');
+  oc.addColorStop(0.6, '#060e1e');
+  oc.addColorStop(1,   '#020810');
+  ctx.beginPath(); pathGen(sphere);
+  ctx.fillStyle = oc; ctx.fill();
+}
+
+/* ── ISO 3166-1 numeric → country name (major countries) ── */
+const COUNTRY_NAMES = {
+  '004':'Afghanistan','008':'Albania','012':'Algeria','024':'Angola',
+  '032':'Argentina','036':'Australia','040':'Austria','050':'Bangladesh',
+  '056':'Belgium','068':'Bolivia','076':'Brazil','100':'Bulgaria',
+  '116':'Cambodia','120':'Cameroon','124':'Canada','144':'Sri Lanka',
+  '152':'Chile','156':'China','170':'Colombia','180':'DR Congo',
+  '188':'Costa Rica','191':'Croatia','192':'Cuba','203':'Czech Rep.',
+  '208':'Denmark','214':'Dom. Republic','218':'Ecuador','818':'Egypt',
+  '222':'El Salvador','231':'Ethiopia','246':'Finland','250':'France',
+  '276':'Germany','288':'Ghana','300':'Greece','320':'Guatemala',
+  '332':'Haiti','340':'Honduras','348':'Hungary','356':'India',
+  '360':'Indonesia','364':'Iran','368':'Iraq','372':'Ireland',
+  '376':'Israel','380':'Italy','388':'Jamaica','392':'Japan',
+  '400':'Jordan','398':'Kazakhstan','404':'Kenya','410':'South Korea',
+  '408':'North Korea','418':'Laos','422':'Lebanon','434':'Libya',
+  '450':'Madagascar','484':'Mexico','504':'Morocco','508':'Mozambique',
+  '104':'Myanmar','516':'Namibia','524':'Nepal','528':'Netherlands',
+  '554':'New Zealand','558':'Nicaragua','566':'Nigeria','578':'Norway',
+  '586':'Pakistan','591':'Panama','598':'Papua New Guinea','604':'Peru',
+  '608':'Philippines','616':'Poland','620':'Portugal','642':'Romania',
+  '643':'Russia','682':'Saudi Arabia','686':'Senegal','694':'Sierra Leone',
+  '706':'Somalia','710':'South Africa','729':'Sudan','752':'Sweden',
+  '756':'Switzerland','760':'Syria','158':'Taiwan','834':'Tanzania',
+  '764':'Thailand','792':'Turkey','800':'Uganda','804':'Ukraine',
+  '784':'UAE','826':'United Kingdom','840':'United States','858':'Uruguay',
+  '860':'Uzbekistan','862':'Venezuela','704':'Vietnam','887':'Yemen',
+  '894':'Zambia','716':'Zimbabwe','304':'Greenland','352':'Iceland',
+  '496':'Mongolia','682':'Saudi Arabia','466':'Mali','562':'Niger',
+  '788':'Tunisia','024':'Angola','046':'Burkina Faso','686':'Senegal',
+};
+
+/* ── Continent label centroids ── */
+const CONTINENT_LABELS = [
+  {name:'NORTH AMERICA', lon:-100, lat:48},
+  {name:'SOUTH AMERICA', lon:-58,  lat:-15},
+  {name:'EUROPE',        lon:15,   lat:52},
+  {name:'AFRICA',        lon:20,   lat:5},
+  {name:'ASIA',          lon:90,   lat:48},
+  {name:'AUSTRALIA',     lon:134,  lat:-25},
+  {name:'ANTARCTICA',    lon:0,    lat:-82},
+  {name:'GREENLAND',     lon:-42,  lat:72},
+];
+
+function drawWorld() {
+  if (!worldCountries && !worldLand) return;
+  const R  = globeRadius();
+  const cx = W/2, cy = H/2;
+
+  ctx.save();
+  ctx.beginPath(); pathGen(sphere); ctx.clip();
+
+  /* Grid — 10 deg */
+  ctx.beginPath(); pathGen(graticule10);
+  ctx.strokeStyle = 'rgba(0,120,200,0.07)';
+  ctx.lineWidth = 0.35; ctx.stroke();
+
+  /* Grid — 20 deg */
+  ctx.beginPath(); pathGen(graticule20);
+  ctx.strokeStyle = 'rgba(0,160,255,0.15)';
+  ctx.lineWidth = 0.45; ctx.stroke();
+
+  /* ── Land fill: draw EACH country individually to avoid antimeridian winding bugs ──
+     This is the correct way to handle NA & Russia crossing the dateline */
+  const features = worldCountries ? worldCountries.features : (worldLand ? [worldLand] : []);
+  features.forEach(f => {
+    ctx.beginPath(); pathGen(f);
+    ctx.fillStyle = 'rgba(8,24,44,0.98)'; ctx.fill();
+  });
+
+  /* Country borders */
+  if (worldBorders) {
+    ctx.beginPath(); pathGen(worldBorders);
+    ctx.strokeStyle = zoomLevel > 2 ? 'rgba(0,160,255,0.4)' : 'rgba(0,160,255,0.22)';
+    ctx.lineWidth = 0.45; ctx.stroke();
+  }
+
+  /* Coastlines on top */
+  features.forEach(f => {
+    ctx.beginPath(); pathGen(f);
+    ctx.strokeStyle = 'rgba(0,225,255,0.72)';
+    ctx.lineWidth = 0.85; ctx.stroke();
+  });
+
+  /* ── LABELS ── */
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+  if (zoomLevel < 2.2) {
+    /* Continent labels when zoomed out */
+    CONTINENT_LABELS.forEach(({name, lon, lat}) => {
+      const pt = projection([lon, lat]);
+      if (!pt) return;
+      const fs = Math.max(9, Math.min(13, 11 * zoomLevel));
+      ctx.font = `600 ${fs}px 'Orbitron', monospace`;
+      ctx.fillStyle = 'rgba(0,230,255,0.45)';
+      ctx.shadowColor = 'rgba(0,200,255,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.fillText(name, pt[0], pt[1]);
+      ctx.shadowBlur = 0;
+    });
+  } else if (worldCountries) {
+    /* Country labels when zoomed in */
+    const fs = Math.max(8, Math.min(15, 6.5 * zoomLevel));
+    ctx.font = `${fs}px 'Share Tech Mono', monospace`;
+    worldCountries.features.forEach(feature => {
+      const name = COUNTRY_NAMES[String(feature.id)];
+      if (!name) return;
+      const centroid = d3.geoCentroid(feature);
+      const pt = projection(centroid);
+      if (!pt) return;
+      /* Only draw if centroid is clearly on front face */
+      const [lon2, lat2] = centroid;
+      const phi  = lat2 * Math.PI / 180;
+      const dlam = (lon2 - (-rotation[0])) * Math.PI / 180;
+      const cosc = Math.sin(rotation[1]*Math.PI/180)*Math.sin(phi) +
+                   Math.cos(rotation[1]*Math.PI/180)*Math.cos(phi)*Math.cos(dlam);
+      if (cosc < 0.15) return;  /* Behind or near edge — skip */
+      ctx.fillStyle = `rgba(0,220,255,${Math.min(0.82, 0.3 + cosc * 0.6)})`;
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 3;
+      ctx.fillText(name, pt[0], pt[1]);
+      ctx.shadowBlur = 0;
+    });
+  }
+
+  /* Scanning beam */
+  const angle = (t * 40) % 360;
+  const rad   = angle * Math.PI / 180;
+  const sx = cx + R * 1.01 * Math.cos(rad);
+  const sy = cy - R * 1.01 * Math.sin(rad);
+  const scanG = ctx.createLinearGradient(cx, cy, sx, sy);
+  scanG.addColorStop(0,   'rgba(0,255,255,0)');
+  scanG.addColorStop(0.75,'rgba(0,255,255,0)');
+  scanG.addColorStop(0.9, 'rgba(0,255,255,0.03)');
+  scanG.addColorStop(1,   'rgba(0,255,255,0.08)');
+  ctx.fillStyle = scanG; ctx.fillRect(0, 0, W, H);
+
+  /* Specular */
+  const sp = ctx.createRadialGradient(cx-R*0.3, cy-R*0.26, 0, cx-R*0.3, cy-R*0.26, R*0.62);
+  sp.addColorStop(0,   'rgba(200,240,255,0.1)');
+  sp.addColorStop(0.35,'rgba(120,200,255,0.04)');
+  sp.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.fillStyle = sp; ctx.fillRect(0, 0, W, H);
+
+  const sp2 = ctx.createRadialGradient(cx-R*0.31, cy-R*0.27, 0, cx-R*0.31, cy-R*0.27, R*0.09);
+  sp2.addColorStop(0, 'rgba(255,255,255,0.22)');
+  sp2.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sp2; ctx.fillRect(0, 0, W, H);
+
+  ctx.restore();
+
+  /* Rim glow */
+  ctx.beginPath(); pathGen(sphere);
+  ctx.strokeStyle = 'rgba(0,200,255,0.65)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); pathGen(sphere);
+  ctx.strokeStyle = 'rgba(0,80,200,0.3)'; ctx.lineWidth = 3.5; ctx.stroke();
+}
+
+function drawEvents() {
+  hitCache = [];
+  const rings = [];
+  const R = globeRadius();
+  const cx = W/2, cy = H/2;
+
+  EVENTS.forEach((ev, i) => {
+    if (!activeTypes.has(ev.type)) return;
+    if (ev.type === 'earthquakes' && (ev.mag || 0) < minMag) return;
+
+    const hz    = HZ[ev.type];
+    const isEq  = ev.type === 'earthquakes';
+    const col   = isEq ? quakeColor(ev.mag) : hz.hex;
+    const dotR  = isEq ? quakeR(ev.mag) : 4;
+
+    /* D3 projection — returns null if behind globe (clipAngle=90) */
+    const coords = projection([ev.lng, ev.lat]);
+    if (!coords) return;
+    const [sx, sy] = coords;
+
+    /* Depth offset: push point toward center of sphere */
+    const df  = Math.min((ev.depth || 0) / 700, 1) * 0.75;
+    const ex  = cx + (sx - cx) * (1 - df);
+    const ey  = cy + (sy - cy) * (1 - df);
+
+    ctx.save();
+    ctx.beginPath(); pathGen(sphere); ctx.clip();
+
+    /* Depth line */
+    if (showDepth && (ev.depth || 0) > 15) {
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey);
+      ctx.strokeStyle = col + '28'; ctx.lineWidth = 0.55; ctx.stroke();
+    }
+
+    /* Glow halo — constrained to prevent blobs */
+    const glowR = Math.min(dotR * 3.5, 18);
+    const hg = ctx.createRadialGradient(ex, ey, 0, ex, ey, glowR);
+    hg.addColorStop(0,   col + '45');
+    hg.addColorStop(0.4, col + '22');
+    hg.addColorStop(1,   col + '00');
+    ctx.beginPath(); ctx.arc(ex, ey, glowR, 0, Math.PI*2);
+    ctx.fillStyle = hg; ctx.fill();
+
+    /* Core dot */
+    ctx.shadowColor = col;
+    ctx.shadowBlur  = dotR * 2;
+    ctx.beginPath(); ctx.arc(ex, ey, dotR, 0, Math.PI*2);
+    ctx.fillStyle = col; ctx.globalAlpha = 0.92; ctx.fill();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    /* Bright centre */
+    ctx.beginPath(); ctx.arc(ex, ey, dotR * 0.3, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fill();
+
+    ctx.restore();
+
+    hitCache.push({ev, ex, ey, sx, sy, dotR, col});
+
+    /* Queue surface pulse ring */
+    if (showPulse && (ev.depth || 0) < 20) {
+      rings.push({sx, sy, dotR, col, hz, phase: (i * 0.73) % (Math.PI*2)});
+    }
+  });
+
+  /* Draw pulse rings separately (on top) */
+  if (showPulse) {
+    rings.forEach(({sx, sy, dotR, col, hz, phase}) => {
+      const frac = Math.abs(Math.sin(t * hz.spd * 0.25 + phase));
+      const rRing = dotR * 1.8 + frac * dotR * 5;
+      const alpha = (1 - frac) * 0.45;
+      ctx.save();
+      ctx.beginPath(); pathGen(sphere); ctx.clip();
+      ctx.beginPath(); ctx.arc(sx, sy, rRing, 0, Math.PI*2);
+      ctx.strokeStyle = col + Math.round(alpha * 255).toString(16).padStart(2, '0');
+      ctx.lineWidth = 0.9; ctx.stroke();
+      ctx.restore();
+    });
+  }
+}
+
+/* ── Main render loop (replaced by render_patched below) ── */
+function render() {
+  // render_patched() is the active loop
+  t += 1/60;
+
+  /* Inertia */
+  if (!dragging) {
+    rotation[0] += velLon;
+    rotation[1] = Math.max(-90, Math.min(90, rotation[1] + velLat));
+    velLon *= 0.92;
+    velLat *= 0.92;
+    /* Auto orbit */
+    if (autoOrbit) rotation[0] += 0.12;
+  }
+
+  updateProjection();
+
+  /* Clear */
+  ctx.fillStyle = '#000308';
+  ctx.fillRect(0, 0, W, H);
+
+  drawStars();
+  drawGlobeBackground();
+  drawWorld();
+  drawEvents();
+}
+
+/* ════════════════════════════════════════════════
+   INTERACTION
+════════════════════════════════════════════════ */
+
+canvas.addEventListener('mousedown', e => {
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  velLon = 0; velLat = 0;
+  autoOrbit = false;
+  document.getElementById('bOrb').classList.remove('on');
+});
+window.addEventListener('mousemove', e => {
+  if (dragging) {
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    const sens = 0.35 / zoomLevel;
+    velLon =  dx * sens;   // positive dx → globe follows finger right
+    velLat = -dy * sens;   // negative dy → drag down = earth moves down
+    rotation[0] = rotation[0] + dx * sens;
+    rotation[1] = Math.max(-90, Math.min(90, rotation[1] - dy * sens));
+    lastX = e.clientX; lastY = e.clientY;
+  }
+
+  /* Tooltip */
+  let hit = null, bd = 26;
+  hitCache.forEach(h => {
+    const d = Math.hypot(e.clientX - h.ex, e.clientY - h.ey);
+    if (d < Math.max(h.dotR * 2.5, 10) && d < bd) { bd = d; hit = h; }
+  });
+  const tt = document.getElementById('tt');
+  if (hit) {
+    const ev = hit.ev, hz = HZ[ev.type];
+    document.getElementById('tt-type').textContent = hz.label;
+    document.getElementById('tt-name').textContent = (ev.mag ? 'M' + ev.mag.toFixed(1) + ' — ' : '') + ev.title;
+    document.getElementById('tt-meta').textContent = (ev.depth ? ev.depth + 'km depth · ' : '') + ev.src;
+    tt.style.left = (e.clientX + 16) + 'px';
+    tt.style.top  = (e.clientY - 14) + 'px';
+    tt.classList.add('show');
+    canvas.style.cursor = 'pointer';
+  } else {
+    tt.classList.remove('show');
+    canvas.style.cursor = 'crosshair';
+  }
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+
+/* Click → popup  (blank canvas click no longer closes it — use ✕ button or Esc) */
+let isDrag = false;
+canvas.addEventListener('mousedown', () => { isDrag = false; });
+window.addEventListener('mousemove',  () => { isDrag = true;  }, {passive:true});
+
+canvas.addEventListener('click', e => {
+  if (isDrag) { isDrag = false; return; }  /* ignore drag-release */
+  let hit = null, bd = 30;
+  hitCache.forEach(h => {
+    const d = Math.hypot(e.clientX - h.ex, e.clientY - h.ey);
+    if (d < Math.max(h.dotR * 3, 12) && d < bd) { bd = d; hit = h; }
+  });
+  if (hit) openPopup(hit.ev, hit.col, e.clientX, e.clientY);
+  /* No else — blank canvas click does NOT close popup */
+});
+
+/* ── ZOOM: mouse wheel ── */
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 0.89;
+  zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoomLevel * factor));
+  document.getElementById('zoom-val').textContent = zoomLevel.toFixed(1) + '×';
+}, {passive: false});
+
+/* ── ZOOM: pinch (touch) ── */
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    pinchDist0 = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    pinchZoom0 = zoomLevel;
+  } else if (e.touches.length === 1) {
+    dragging = true;
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    velLon = 0; velLat = 0; autoOrbit = false;
+  }
+}, {passive: false});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, pinchZoom0 * d / pinchDist0));
+    document.getElementById('zoom-val').textContent = zoomLevel.toFixed(1) + '×';
+  } else if (e.touches.length === 1 && dragging) {
+    const dx = e.touches[0].clientX - lastX;
+    const dy = e.touches[0].clientY - lastY;
+    const sens = 0.35 / zoomLevel;
+    rotation[0] += dx * sens;
+    rotation[1] = Math.max(-90, Math.min(90, rotation[1] - dy * sens));
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+  }
+}, {passive: false});
+
+canvas.addEventListener('touchend', () => { dragging = false; });
+
+/* ── Popup ── */
+function openPopup(ev, col, px, py) {
+  const hz = HZ[ev.type]; if (!hz) return;
+  document.getElementById('pop-stripe').style.background = col;
+  document.getElementById('pop-type').textContent   = hz.icon + ' ' + hz.label + ' HAZARD';
+  document.getElementById('pop-name').textContent   = ev.title;
+  document.getElementById('pop-coords').textContent = `${ev.lat.toFixed(2)}°, ${ev.lng.toFixed(2)}°`;
+  const d = ev.depth || 0;
+  document.getElementById('pop-depth').textContent  = d > 0
+    ? `${d} km — ${d < 70 ? 'Shallow' : d < 300 ? 'Intermediate' : 'Deep Subduction'}`
+    : 'Surface Level';
+  const ageDaysPopup = ev.date ? Math.round((Date.now() - ev.date) / 86400000) : null;
+  const ageTxt = ageDaysPopup === null ? '—'
+    : ageDaysPopup === 0 ? 'TODAY'
+    : ageDaysPopup === 1 ? 'YESTERDAY'
+    : ageDaysPopup < 7  ? ageDaysPopup + ' DAYS AGO'
+    : ageDaysPopup < 21 ? Math.round(ageDaysPopup/7) + ' WEEKS AGO ⚠'
+    : ageDaysPopup + ' DAYS AGO ⚠ MAY BE HISTORICAL';
+  document.getElementById('pop-date').textContent = new Date(ev.date).toDateString() + ' — ' + ageTxt;
+  document.getElementById('pop-src').textContent    = ev.src + (ev.mag ? ' · M' + ev.mag.toFixed(1) : '');
+  const pct = ev.mag ? ev.mag / 9 * 100 : 55;
+  const pbf = document.getElementById('pop-bar');
+  pbf.style.cssText = `width:0%;background:linear-gradient(90deg,${col}44,${col});box-shadow:0 0 4px ${col}88;`;
+  setTimeout(() => pbf.style.width = pct + '%', 60);
+  const pop = document.getElementById('pop');
+  let lx = px + 16, ly = py - 80;
+  if (lx + 296 > W) lx = px - 310;
+  if (ly < 60) ly = 60;
+  if (ly + 260 > H - 30) ly = H - 292;
+  pop.style.left = lx + 'px'; pop.style.top = ly + 'px';
+  pop.classList.add('show');
+}
+document.getElementById('pop-close').onclick = () => document.getElementById('pop').classList.remove('show');
+
+/* ── Hazard panel ── */
+const lp = document.getElementById('lp');
+Object.entries(HZ).forEach(([key, hz]) => {
+  const btn = document.createElement('div');
+  btn.className = 'hb on'; btn.style.setProperty('--c2', hz.hex);
+  btn.innerHTML = `<div class="hi">${hz.icon}</div><div class="hinfo"><div class="hn">${hz.label}</div><div class="hct" id="hc-${key}">0 events</div></div><div class="hpip"></div>`;
+  btn.addEventListener('click', () => {
+    activeTypes.has(key) ? activeTypes.delete(key) : activeTypes.add(key);
+    btn.classList.toggle('on', activeTypes.has(key));
+    updateStats();
+  });
+  lp.appendChild(btn);
+});
+
+function regionName(la, lo) {
+  if (la > 60)  return 'Arctic/Polar';
+  if (la > 30 && lo > 100)  return 'East Asia/Pacific';
+  if (la > 30 && lo > 0 && lo < 60) return 'Middle East';
+  if (la > 30 && lo < -60) return 'North America';
+  if (la > 0  && lo > 90)  return 'SE Asia/Indonesia';
+  if (la < 0  && lo > 100) return 'Australia/Pacific';
+  if (la < 0  && lo < -40) return 'South America';
+  return 'Africa/Europe';
+}
+
+function updateStats() {
+  const vis = EVENTS.filter(e => activeTypes.has(e.type) && (e.type !== 'earthquakes' || (e.mag||0) >= minMag));
+  document.getElementById('sc1').textContent   = vis.length;
+  document.getElementById('ts-ev').textContent = vis.length;
+  const crit = vis.filter(e => (e.mag||0) >= 6 || ['volcanoes','severeStorms'].includes(e.type)).length;
+  document.getElementById('sc2').textContent   = crit;
+  document.getElementById('ts-cr').textContent = crit;
+  document.getElementById('sc3').textContent   = activeTypes.size + '/' + Object.keys(HZ).length;
+  const bins = {};
+  vis.forEach(e => { const k = Math.round(e.lat/25)*25+','+Math.round(e.lng/35)*35; bins[k]=(bins[k]||0)+1; });
+  const top = Object.entries(bins).sort((a,b) => b[1]-a[1])[0];
+  if (top) { const [la,lo] = top[0].split(',').map(Number); document.getElementById('sc4').textContent = regionName(la, lo); }
+  const score = Math.min(99, Math.round(vis.reduce((s,e) => {
+    const w = {earthquakes:4,volcanoes:4,severeStorms:3,wildfires:2,floods:2,landslides:2,seaLakeIce:1,dustHaze:1};
+    return s + (w[e.type]||1) * ((e.mag||0)>=5 ? e.mag/9 : 0.3);
+  }, 0) / 2.5));
+  const c = score < 30 ? '#22c55e' : score < 65 ? '#eab308' : '#ef4444';
+  document.getElementById('tbi').style.cssText = `width:${score}%;background:linear-gradient(90deg,${c}55,${c});box-shadow:0 0 6px ${c}`;
+  document.getElementById('tbn').textContent = score;
+  document.getElementById('tbn').style.color = c;
+  document.getElementById('ts-tm').textContent = new Date().toLocaleTimeString();
+  Object.keys(HZ).forEach(key => {
+    const el = document.getElementById('hc-' + key);
+    if (el) el.textContent = EVENTS.filter(e => e.type === key && (key !== 'earthquakes' || (e.mag||0) >= minMag)).length + ' events';
+  });
+  const notable = EVENTS.filter(e => ['volcanoes','severeStorms'].includes(e.type)||(e.mag||0)>=5.5)
+    .sort((a,b) => (b.mag||3)-(a.mag||3)).slice(0, 20);
+  document.getElementById('tk-inner').textContent = notable.map(e => HZ[e.type].icon + ' ' + (e.mag?'M'+e.mag.toFixed(1)+' ':'')+e.title+'  ·  ').join('     ');
+}
+
+/* ── Controls ── */
+function flyTo(lambda, phi) {
+  document.getElementById('pop').classList.remove('show');
+  autoOrbit = false;
+  document.getElementById('bOrb').classList.remove('on');
+  const sl = rotation[0], sp2 = rotation[1];
+  let p = 0;
+  const iv = setInterval(() => {
+    p = Math.min(1, p + 0.025);
+    const e = 1 - Math.pow(1 - p, 3);
+    rotation[0] = sl + (lambda - sl) * e;
+    rotation[1] = sp2 + (phi - sp2) * e;
+    if (p >= 1) clearInterval(iv);
+  }, 16);
+}
+
+document.getElementById('bOrb').onclick   = function(){ autoOrbit=!autoOrbit; this.classList.toggle('on',autoOrbit); };
+document.getElementById('bPulse').onclick = function(){ showPulse=!showPulse; this.classList.toggle('on',showPulse); };
+document.getElementById('bDepth').onclick = function(){ showDepth=!showDepth; this.classList.toggle('on',showDepth); };
+document.getElementById('bPac').onclick   = () => flyTo(-155, -5);
+document.getElementById('bAtl').onclick   = () => flyTo(10, 15);
+document.getElementById('bEur').onclick   = () => flyTo(-60, 30);
+document.getElementById('bZi').onclick    = () => { zoomLevel = Math.min(ZOOM_MAX, zoomLevel * 1.4); document.getElementById('zoom-val').textContent = zoomLevel.toFixed(1)+'×'; };
+document.getElementById('bZo').onclick    = () => { zoomLevel = Math.max(ZOOM_MIN, zoomLevel * 0.7); document.getElementById('zoom-val').textContent = zoomLevel.toFixed(1)+'×'; };
+document.getElementById('bRst').onclick   = () => {
+  autoOrbit=true; document.getElementById('bOrb').classList.add('on');
+  rotation=[-10,0,0]; zoomLevel=1.0;
+  document.getElementById('zoom-val').textContent='1.0×';
+  document.getElementById('pop').classList.remove('show');
+  flyTo(-10, 0);
+};
+
+/* Mag slider */
+const ms = document.getElementById('mag-range');
+ms.addEventListener('input', () => {
+  minMag = parseFloat(ms.value);
+  document.getElementById('mag-val').textContent = 'M ' + parseFloat(ms.value).toFixed(1) + '+';
+  const pct = (ms.value / 8 * 100) + '%';
+  ms.style.setProperty('--pct', pct);
+  updateStats();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('pop').classList.remove('show');
+  if (e.key === 'o') document.getElementById('bOrb').click();
+  if (e.key === 'r') document.getElementById('bRst').click();
+  if (e.key === 'p') document.getElementById('bPac').click();
+  if (e.key === '+' || e.key === '=') document.getElementById('bZi').click();
+  if (e.key === '-') document.getElementById('bZo').click();
+});
+
+/* ════════════════════════════════════════════════
+   DATA LOADING — World topology + Live APIs
+════════════════════════════════════════════════ */
+
+async function loadWorldTopology() {
+  const sub = document.getElementById('load-sub');
+  try {
+    sub.textContent = 'FETCHING WORLD TOPOLOGY...';
+    const res  = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+    const topo = await res.json();
+
+    /* Extract features */
+    worldLand     = topojson.feature(topo, topo.objects.land);
+    worldCountries = topojson.feature(topo, topo.objects.countries);
+    worldBorders  = topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b);
+
+    sub.textContent = 'TOPOLOGY LOADED ✓  FETCHING LIVE DATA...';
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+    }, 400);
+
+    await loadLiveData();
+
+  } catch(err) {
+    console.error('Topology load failed:', err);
+    sub.textContent = 'TOPOLOGY UNAVAILABLE — USING EMBEDDED DATA';
+    setTimeout(() => {
+      document.getElementById('loading').style.display = 'none';
+    }, 1200);
+  }
+}
+
+/* ── helpers for EONET geometry ── */
+function eonetCoords(g) {
+  /* EONET geometry can be Point or Polygon. Extract a representative [lat,lng] */
+  if (!g || !g.coordinates) return null;
+  if (g.type === 'Point') {
+    const [lng, lat] = g.coordinates;
+    return isFinite(lat) && isFinite(lng) ? {lat, lng} : null;
+  }
+  if (g.type === 'Polygon') {
+    /* Average first ring vertices as centroid */
+    const ring = g.coordinates[0];
+    if (!ring || !ring.length) return null;
+    let slng = 0, slat = 0, count = 0;
+    ring.forEach(([lng, lat]) => { if (isFinite(lat) && isFinite(lng)) { slat+=lat; slng+=lng; count++; } });
+    return count > 0 ? {lat: slat/count, lng: slng/count} : null;
+  }
+  return null;
+}
+
+/* ── refresh countdown state ── */
+const REFRESH_BASE_MS = 5 * 60 * 1000;  // 5 minutes baseline
+let nextRefreshAt   = 0;
+let refreshTimer    = null;
+let consecutiveFails = 0;   // exponential backoff when network is blocked
+let networkBlocked  = false; // detected sandbox / no network
+
+function startRefreshCycle(delay = REFRESH_BASE_MS) {
+  nextRefreshAt = Date.now() + delay;
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async () => {
+    /* Update countdown display */
+    const secLeft = Math.max(0, Math.round((nextRefreshAt - Date.now()) / 1000));
+    const el = document.getElementById('ts-next');
+    if (networkBlocked) {
+      if (el) { el.textContent = 'OPEN IN BROWSER'; el.style.color = '#ef4444'; }
+    } else {
+      const mm = String(Math.floor(secLeft / 60)).padStart(2,'0');
+      const ss = String(secLeft % 60).padStart(2,'0');
+      if (el) el.textContent = mm + ':' + ss;
+    }
+    if (Date.now() >= nextRefreshAt && !networkBlocked) {
+      document.getElementById('live-txt').textContent = 'REFRESHING...';
+      await loadLiveData();
+    }
+  }, 1000);
+}
+
+/* EONET v3 uses camelCase IDs but also sometimes full names — map both */
+const catMap = {
+  wildfires:'wildfires',         'Wildfires':'wildfires',
+  volcanoes:'volcanoes',         'Volcanoes':'volcanoes',
+  severeStorms:'severeStorms',   'Severe Storms':'severeStorms',
+  floods:'floods',               'Floods':'floods',
+  seaLakeIce:'seaLakeIce',       'Sea and Lake Ice':'seaLakeIce',
+  landslides:'landslides',       'Landslides':'landslides',
+  dustHaze:'dustHaze',           'Dust and Haze':'dustHaze',
+  manmade:'wildfires',           'Manmade':'wildfires',
+  snow:'seaLakeIce',             'Snow':'seaLakeIce',
+  tempExtremes:'severeStorms',   'Temperature Extremes':'severeStorms',
+};
+
+
+async function loadLiveData() {
+  const live = [];
+  const sources = [];
+
+  /* Timeout helper — avoids AbortController which can't be cloned in sandboxed iframes */
+  const fetchWithTimeout = (url, ms=12000) =>
+    Promise.race([
+      fetch(url),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+    ]);
+
+  /* === SOURCE 1: USGS Earthquakes M2.5+ (past 30 days) === */
+  try {
+    const r = await fetchWithTimeout('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson');
+    const d = await r.json();
+    d.features.forEach(f => {
+      const [lng, lat, depth] = f.geometry.coordinates;
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      live.push({lat, lng, type:'earthquakes', title:f.properties.place||'Earthquake',
+        mag:f.properties.mag, depth:Math.abs(depth)||0, date:f.properties.time, src:'USGS'});
+    });
+    sources.push('USGS');
+  } catch(e) { console.warn('USGS failed:', e.message); }
+
+  /* === SOURCE 2: NASA EONET (all open events) ===
+     FIX: Handle both Point and Polygon geometry types.
+     Previously only Point was handled — Polygon events (dust/haze, landslides,
+     seaLakeIce) were silently dropped because coordinates[1] returned an array. */
+  try {
+    const r = await fetchWithTimeout('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=500');
+    const d = await r.json();
+    d.events.forEach(ev => {
+      /* Try category id first, fall back to category title (EONET inconsistency) */
+      const cat = ev.categories?.[0];
+      const type = catMap[cat?.id] || catMap[cat?.title];
+      if (!type) return;
+      const geoArr = ev.geometry || [];
+      /* Take the most recent geometry entry */
+      let pt = null;
+      for (let i = geoArr.length - 1; i >= 0; i--) {
+        pt = eonetCoords(geoArr[i]);
+        if (pt) break;
+      }
+      if (!pt) return;
+      const dateStr = geoArr[geoArr.length-1]?.date || null;
+      const evDate = dateStr ? new Date(dateStr).getTime() : Date.now();
+      /* Wildfire staleness filter: EONET marks fires "open" long after they're out.
+         Cap wildfire events at 21 days old — beyond that EONET hasn't updated */
+      const ageDays = (Date.now() - evDate) / 86400000;
+      if (type === 'wildfires' && ageDays > 21) return;
+      live.push({lat:pt.lat, lng:pt.lng, type, title:ev.title, depth:0,
+        date: evDate, src:'NASA EONET', ageDays: Math.round(ageDays)});
+    });
+    sources.push('EONET');
+  } catch(e) { console.warn('EONET failed:', e.message); }
+
+  /* GDACS removed — blocked by CORS in all browsers */
+
+  if (live.length > 20) {
+    consecutiveFails = 0;
+    networkBlocked   = false;
+    /* Deduplicate events that are within 0.5 degrees and same type */
+    const deduped = [];
+    live.forEach(ev => {
+      const dup = deduped.find(d => d.type === ev.type &&
+        Math.abs(d.lat - ev.lat) < 0.5 && Math.abs(d.lng - ev.lng) < 0.5);
+      if (!dup) deduped.push(ev);
+    });
+    /* ── CRITICAL FIX: backfill any hazard type with zero live events from FALLBACK
+       This is what causes dust/haze & landslides to vanish when EONET is blocked:
+       USGS alone gives 1000+ quakes → live.length > 20 → EVENTS = deduped (quakes only)
+       → all other types disappear from map and toggles stop working ── */
+    const liveTypes = new Set(deduped.map(e => e.type));
+    Object.keys(HZ).forEach(type => {
+      if (!liveTypes.has(type)) {
+        const fb = FALLBACK.filter(e => e.type === type);
+        fb.forEach(e => deduped.push({...e, src: e.src + ' (representative)'}));
+      }
+    });
+    EVENTS = deduped;
+    const lp = document.querySelector('.lpulse');
+    lp.style.background = '#22c55e';
+    lp.style.boxShadow  = '0 0 7px #22c55e';
+    document.getElementById('live-txt').textContent = sources.join(' + ') + ' LIVE';
+    checkBreakingEvents(deduped);
+    document.getElementById('ts-tm').textContent = new Date().toLocaleTimeString();
+    hideSandboxBanner();
+    updateStats();
+    startRefreshCycle(REFRESH_BASE_MS);
+  } else {
+    consecutiveFails++;
+    /* After 2 consecutive failures, assume network is blocked (sandbox/CORS) */
+    if (consecutiveFails >= 2) {
+      networkBlocked = true;
+      showSandboxBanner();
+      document.getElementById('live-txt').textContent = 'DEMO DATA (sandbox)';
+      const lp = document.querySelector('.lpulse');
+      lp.style.background = '#ef4444';
+      lp.style.boxShadow  = '0 0 7px #ef4444';
+      /* Stop retrying — network is blocked, no point hammering */
+      if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+      const el = document.getElementById('ts-next');
+      if (el) { el.textContent = 'OPEN IN BROWSER'; el.style.color = '#ef4444'; }
+    } else {
+      document.getElementById('live-txt').textContent = 'RETRYING...';
+      startRefreshCycle(15000); /* retry in 15s once */
+    }
+    document.getElementById('ts-tm').textContent = new Date().toLocaleTimeString();
+    updateStats();
+  }
+}
+
+/* ── Sandbox banner ── */
+function showSandboxBanner() {
+  let b = document.getElementById('sandbox-banner');
+  if (b) return;
+  b = document.createElement('div');
+  b.id = 'sandbox-banner';
+  b.innerHTML = `
+    <span style="font-family:Orbitron,monospace;font-size:.55rem;font-weight:700;letter-spacing:.12em;">
+      ⚠ NETWORK BLOCKED
+    </span>
+    <span style="font-size:.5rem;margin-left:8px;opacity:.8;">
+      Live APIs unavailable in this preview. Download &amp; open in your browser for live data.
+    </span>
+    <button onclick="this.parentElement.remove()" style="margin-left:auto;background:transparent;border:1px solid rgba(239,68,68,.4);color:#ef4444;padding:2px 8px;cursor:pointer;font-size:.48rem;font-family:Share Tech Mono,monospace;">✕</button>
+  `;
+  b.style.cssText = 'position:fixed;top:54px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(40,0,0,.95);border:1px solid rgba(239,68,68,.5);border-top:2px solid #ef4444;padding:7px 14px;display:flex;align-items:center;gap:6px;color:#ef4444;max-width:680px;width:90vw;backdrop-filter:blur(8px);';
+  document.body.appendChild(b);
+}
+function hideSandboxBanner() {
+  const b = document.getElementById('sandbox-banner');
+  if (b) b.remove();
+}
+
+
+/* ════════════════════════════════════════════════
+   HISTORICAL EVENTS DATABASE
+════════════════════════════════════════════════ */
+const HISTORY = [
+  {year:1906,month:4, lat:37.7,  lng:-122.4, type:'earthquakes', mag:7.9, deaths:'3,000+',
+   title:'San Francisco Earthquake',
+   desc:'The most significant earthquake to strike the US in the 20th century. Fires burned for days, destroying 490 city blocks and leaving 300,000 homeless.',
+   link:'https://en.wikipedia.org/wiki/1906_San_Francisco_earthquake'},
+  {year:1908,month:12,lat:38.2,  lng:15.7,   type:'earthquakes', mag:7.1, deaths:'75,000–200,000',
+   title:'Messina Earthquake — Italy',
+   desc:'The most deadly European earthquake in recorded history. The cities of Messina and Reggio Calabria were almost entirely destroyed.',
+   link:'https://en.wikipedia.org/wiki/1908_Messina_earthquake'},
+  {year:1923,month:9, lat:35.4,  lng:139.1,  type:'earthquakes', mag:7.9, deaths:'140,000+',
+   title:'Great Kanto Earthquake — Japan',
+   desc:'Devastated the Tokyo-Yokohama area. Fires swept the city for days. One of history\'s most destructive urban earthquakes.',
+   link:'https://en.wikipedia.org/wiki/1923_Great_Kant%C5%8D_earthquake'},
+  {year:1931,month:8, lat:32.5,  lng:96.7,   type:'floods',      mag:null,deaths:'400,000–4,000,000',
+   title:'China Floods — Yellow, Yangtze & Huai Rivers',
+   desc:'The deadliest natural disaster in recorded history. A series of floods across central China may have killed up to four million people.',
+   link:'https://en.wikipedia.org/wiki/1931_China_floods'},
+  {year:1938,month:4, lat:34.8,  lng:113.9,  type:'floods',      mag:null,deaths:'400,000–900,000',
+   title:'Yellow River Flood — China',
+   desc:'The 1938 Yellow River flood was a deliberate act — the Nationalist government breached the dikes to slow the Japanese advance.',
+   link:'https://en.wikipedia.org/wiki/1938_Yellow_River_flood'},
+  {year:1960,month:5, lat:-38.1, lng:-73.4,  type:'earthquakes', mag:9.5, deaths:'1,000–6,000',
+   title:'Valdivia Earthquake — Chile',
+   desc:'The most powerful earthquake ever recorded. Triggered tsunamis reaching Hawaii, Japan, and the Philippines. A 9.5 magnitude event that reshaped Chilean coastlines.',
+   link:'https://en.wikipedia.org/wiki/1960_Valdivia_earthquake'},
+  {year:1970,month:11,lat:22.2,  lng:90.5,   type:'severeStorms',mag:null,deaths:'300,000–500,000',
+   title:'Bhola Cyclone — Bangladesh',
+   desc:'The deadliest tropical cyclone ever recorded. Struck East Pakistan (now Bangladesh) and India\'s West Bengal with a devastating storm surge.',
+   link:'https://en.wikipedia.org/wiki/1970_Bhola_cyclone'},
+  {year:1976,month:7, lat:39.6,  lng:118.2,  type:'earthquakes', mag:7.6, deaths:'242,000–655,000',
+   title:'Tangshan Earthquake — China',
+   desc:'One of the deadliest earthquakes of the 20th century. The industrial city of Tangshan was almost completely levelled within seconds.',
+   link:'https://en.wikipedia.org/wiki/1976_Tangshan_earthquake'},
+  {year:1980,month:5, lat:46.2,  lng:-122.2, type:'volcanoes',   mag:null,deaths:'57',
+   title:'Mount St. Helens Eruption — USA',
+   desc:'The most destructive volcanic event in US history. The lateral blast flattened 600 km2 of forest and the ash cloud reached 12 states.',
+   link:'https://en.wikipedia.org/wiki/1980_eruption_of_Mount_St._Helens'},
+  {year:1985,month:11,lat:4.9,   lng:-75.4,  type:'volcanoes',   mag:null,deaths:'23,000',
+   title:'Nevado del Ruiz — Colombia',
+   desc:'The eruption melted glaciers and triggered a catastrophic lahar that buried the town of Armero under 5m of volcanic mud in minutes.',
+   link:'https://en.wikipedia.org/wiki/1985_eruption_of_Nevado_del_Ruiz'},
+  {year:1991,month:6, lat:15.1,  lng:120.4,  type:'volcanoes',   mag:null,deaths:'800',
+   title:'Mount Pinatubo — Philippines',
+   desc:'The second-largest eruption of the 20th century. Injected enough sulfur dioxide into the stratosphere to lower global temperatures by 0.5°C for two years.',
+   link:'https://en.wikipedia.org/wiki/1991_eruption_of_Mount_Pinatubo'},
+  {year:1995,month:1, lat:34.7,  lng:135.2,  type:'earthquakes', mag:6.9, deaths:'6,434',
+   title:'Great Hanshin / Kobe Earthquake — Japan',
+   desc:'Devastated the port city of Kobe. Exposed weaknesses in Japan\'s earthquake-resistant construction and transformed seismic building codes worldwide.',
+   link:'https://en.wikipedia.org/wiki/Great_Hanshin_earthquake'},
+  {year:1999,month:8, lat:40.8,  lng:30.0,   type:'earthquakes', mag:7.6, deaths:'17,000+',
+   title:'Izmit Earthquake — Turkey',
+   desc:'A catastrophic earthquake along the North Anatolian Fault. Izmit, a major industrial city, was devastated within 37 seconds.',
+   link:'https://en.wikipedia.org/wiki/1999_%C4%B0zmit_earthquake'},
+  {year:2004,month:12,lat:3.3,   lng:95.8,   type:'earthquakes', mag:9.1, deaths:'227,898',
+   title:'Indian Ocean Earthquake & Tsunami',
+   desc:'The third-largest earthquake ever recorded. The tsunami it generated killed nearly 228,000 people across 14 countries, the deadliest in recorded history.',
+   link:'https://en.wikipedia.org/wiki/2004_Indian_Ocean_earthquake_and_tsunami'},
+  {year:2005,month:8, lat:29.9,  lng:-89.6,  type:'severeStorms',mag:null,deaths:'1,833',
+   title:'Hurricane Katrina — Gulf Coast USA',
+   desc:'The costliest and one of the deadliest hurricanes in US history. New Orleans flooded when 53 levees failed, leaving 80% of the city underwater.',
+   link:'https://en.wikipedia.org/wiki/Hurricane_Katrina'},
+  {year:2008,month:5, lat:31.0,  lng:103.3,  type:'earthquakes', mag:7.9, deaths:'87,000+',
+   title:'Sichuan Earthquake — China',
+   desc:'Devastated Sichuan Province. Nearly 5 million people were left homeless and thousands of schools collapsed, prompting outrage at building standards.',
+   link:'https://en.wikipedia.org/wiki/2008_Sichuan_earthquake'},
+  {year:2010,month:1, lat:18.4,  lng:-72.3,  type:'earthquakes', mag:7.0, deaths:'100,000–316,000',
+   title:'Haiti Earthquake',
+   desc:'One of the most catastrophic natural disasters in the Western Hemisphere. Port-au-Prince was nearly obliterated. Haiti\'s rebuilding continues to this day.',
+   link:'https://en.wikipedia.org/wiki/2010_Haiti_earthquake'},
+  {year:2010,month:2, lat:-35.8, lng:-72.7,  type:'earthquakes', mag:8.8, deaths:'525',
+   title:'Chile Earthquake & Tsunami',
+   desc:'One of the most powerful earthquakes ever recorded. Triggered a Pacific-wide tsunami warning. Chile\'s strict building codes saved many lives.',
+   link:'https://en.wikipedia.org/wiki/2010_Chile_earthquake'},
+  {year:2011,month:3, lat:38.3,  lng:142.4,  type:'earthquakes', mag:9.1, deaths:'19,759',
+   title:'Tohoku Earthquake & Tsunami — Japan',
+   desc:'The most powerful earthquake to hit Japan. Generated a 40m tsunami that overwhelmed the Fukushima Daiichi nuclear plant, causing a triple meltdown.',
+   link:'https://en.wikipedia.org/wiki/2011_T%C5%8Dhoku_earthquake_and_tsunami'},
+  {year:2013,month:11,lat:11.2,  lng:124.8,  type:'severeStorms',mag:null,deaths:'6,300',
+   title:'Typhoon Haiyan — Philippines',
+   desc:'One of the strongest tropical cyclones ever recorded at landfall. Storm surges up to 7m inundated Tacloban city. Over 4 million displaced.',
+   link:'https://en.wikipedia.org/wiki/Typhoon_Haiyan'},
+  {year:2015,month:4, lat:28.2,  lng:84.7,   type:'earthquakes', mag:7.8, deaths:'8,964',
+   title:'Gorkha Earthquake — Nepal',
+   desc:'Triggered deadly avalanches on Everest and Langtang Valley. Kathmandu Valley severely damaged. UNESCO heritage sites destroyed.',
+   link:'https://en.wikipedia.org/wiki/2015_Nepal_earthquake'},
+  {year:2017,month:9, lat:18.1,  lng:-65.8,  type:'severeStorms',mag:null,deaths:'2,975',
+   title:'Hurricane Maria — Puerto Rico',
+   desc:'The deadliest natural disaster on record for Puerto Rico. The island\'s entire power grid was destroyed; many communities went without electricity for nearly a year.',
+   link:'https://en.wikipedia.org/wiki/Hurricane_Maria'},
+  {year:2018,month:9, lat:-0.2,  lng:119.8,  type:'earthquakes', mag:7.5, deaths:'4,340',
+   title:'Sulawesi Earthquake & Tsunami — Indonesia',
+   desc:'A 7.5-magnitude quake triggered a tsunami and devastating liquefaction events. The city of Palu was inundated minutes after the shaking stopped.',
+   link:'https://en.wikipedia.org/wiki/2018_Sulawesi_earthquake_and_tsunami'},
+  {year:2019,month:9, lat:-32.0, lng:148.0,  type:'wildfires',   mag:null,deaths:'33 direct, 445 smoke',
+   title:'Black Summer — Australia',
+   desc:'The worst bushfire season in Australia\'s recorded history. Over 18.6 million hectares burned, killing or displacing an estimated 3 billion animals.',
+   link:'https://en.wikipedia.org/wiki/2019%E2%80%9320_Australian_bushfire_season'},
+  {year:2023,month:2, lat:37.2,  lng:37.0,   type:'earthquakes', mag:7.8, deaths:'59,000+',
+   title:'Turkey-Syria Earthquake',
+   desc:'Two massive earthquakes within 9 hours killed over 59,000 people across southern Turkey and northern Syria, displacing millions during winter.',
+   link:'https://en.wikipedia.org/wiki/2023_Turkey%E2%80%93Syria_earthquake'},
+  {year:2023,month:9, lat:31.1,  lng:-8.4,   type:'earthquakes', mag:6.8, deaths:'2,900+',
+   title:'Al Haouz Earthquake — Morocco',
+   desc:'The deadliest earthquake to hit Morocco in over 120 years. Remote villages in the Atlas Mountains were almost completely destroyed.',
+   link:'https://en.wikipedia.org/wiki/2023_Marrakesh%E2%80%93Safi_earthquake'},
+  {year:2024,month:1, lat:37.5,  lng:137.2,  type:'earthquakes', mag:7.5, deaths:'245',
+   title:'Noto Peninsula Earthquake — Japan',
+   desc:'A powerful earthquake struck the Noto Peninsula on New Year\'s Day 2024, triggering tsunami warnings and destroying thousands of buildings.',
+   link:'https://en.wikipedia.org/wiki/2024_Noto_earthquake'},
+];
+
+HISTORY.sort((a,b) => a.year - b.year || a.month - b.month);
+const HIST_MIN = 1906, HIST_MAX = 2024;
+let histIdx = HISTORY.length - 1;
+let histOpen = false;
+
+function initHistoryPanel() {
+  const dots = document.getElementById('hist-dots');
+  HISTORY.forEach((ev, i) => {
+    const hz = HZ[ev.type] || {hex:'#00e5ff'};
+    const d  = document.createElement('div');
+    d.className = 'hdot';
+    d.title = `${ev.year} — ${ev.title}`;
+    d.style.background  = hz.hex;
+    d.style.color       = hz.hex;
+    d.style.boxShadow   = `0 0 4px ${hz.hex}88`;
+    d.addEventListener('click', () => { histIdx = i; showHistEvent(); });
+    dots.appendChild(d);
+  });
+  showHistEvent();
+
+  document.getElementById('hist-slider').addEventListener('input', function() {
+    const pct = this.value / 100;
+    const year = Math.round(HIST_MIN + pct * (HIST_MAX - HIST_MIN));
+    this.style.setProperty('--hp', this.value + '%');
+    document.getElementById('hist-year-badge').textContent = year;
+    /* Find closest event */
+    let best = 0, bdist = Infinity;
+    HISTORY.forEach((ev, i) => { const d = Math.abs(ev.year - year); if (d < bdist) { bdist=d; best=i; } });
+    if (best !== histIdx) { histIdx = best; showHistEvent(); }
+  });
+}
+
+function showHistEvent() {
+  const ev   = HISTORY[histIdx];
+  const hz   = HZ[ev.type] || {hex:'#00e5ff', label:'EVENT'};
+  const col  = hz.hex;
+
+  /* Update slider to match year */
+  const pct  = ((ev.year - HIST_MIN) / (HIST_MAX - HIST_MIN) * 100).toFixed(1);
+  const sl   = document.getElementById('hist-slider');
+  sl.value   = pct;
+  sl.style.setProperty('--hp', pct + '%');
+  document.getElementById('hist-year-badge').textContent = ev.year;
+
+  document.getElementById('hev-badge').textContent  = hz.label;
+  document.getElementById('hev-badge').style.color  = col;
+  document.getElementById('hev-badge').style.borderColor = col;
+  document.getElementById('hev-title').textContent  = ev.title;
+  document.getElementById('hev-title').style.color  = '#fff';
+  document.getElementById('hev-meta').textContent   =
+    `${ev.year}  ·  ${ev.type === 'earthquakes' ? 'M' + ev.mag : hz.label}  ·  ${ev.deaths} deaths`;
+  document.getElementById('hev-desc').textContent   = ev.desc;
+  document.getElementById('hev-link').href          = ev.link;
+  document.getElementById('hev-link').style.color   = col;
+  document.getElementById('hev-link').style.borderColor = col + '66';
+
+  /* Highlight active dot */
+  document.querySelectorAll('.hdot').forEach((d,i) => d.classList.toggle('active', i === histIdx));
+
+  /* Fly globe to event location */
+  flyTo(-ev.lng, ev.lat * 0.4);
+}
+
+document.getElementById('bHist').addEventListener('click', () => {
+  histOpen = !histOpen;
+  document.getElementById('hist-panel').classList.toggle('open', histOpen);
+  document.getElementById('bHist').classList.toggle('on', histOpen);
+  if (histOpen) showHistEvent();
+});
+document.getElementById('hist-close').addEventListener('click', () => {
+  histOpen = false;
+  document.getElementById('hist-panel').classList.remove('open');
+  document.getElementById('bHist').classList.remove('on');
+});
+
+initHistoryPanel();
+
+/* ════════════════════════════════════════════════
+   AMBIENT SPACE MUSIC — Web Audio API
+   No external files. Procedural atmospheric pads.
+════════════════════════════════════════════════ */
+let audioCtx = null, musicPlaying = false;
+let masterGain, padNodes = [], droneNodes = [], pulseNodes = [];
+
+function buildMusic() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.connect(audioCtx.destination);
+
+  /* === REVERB (convolver) via impulse response === */
+  const reverbLen  = audioCtx.sampleRate * 4;
+  const reverbBuf  = audioCtx.createBuffer(2, reverbLen, audioCtx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = reverbBuf.getChannelData(ch);
+    for (let i = 0; i < reverbLen; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/reverbLen, 2.2);
+  }
+  const reverb  = audioCtx.createConvolver();
+  reverb.buffer = reverbBuf;
+
+  const reverbGain = audioCtx.createGain();
+  reverbGain.gain.value = 0.55;
+  reverb.connect(reverbGain);
+  reverbGain.connect(masterGain);
+
+  /* Dry gain path */
+  const dryGain = audioCtx.createGain();
+  dryGain.gain.value = 0.45;
+  dryGain.connect(masterGain);
+
+  /* Helper — make pad oscillator with smooth attack/release */
+  function makePad(freq, type, gainVal, detune=0) {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filt = audioCtx.createBiquadFilter();
+    osc.type      = type;
+    osc.frequency.value = freq;
+    osc.detune.value    = detune;
+    filt.type     = 'lowpass';
+    filt.frequency.value = 1200;
+    filt.Q.value  = 0.8;
+    gain.gain.value = 0;
+    osc.connect(filt); filt.connect(gain);
+    gain.connect(reverb); gain.connect(dryGain);
+    osc.start();
+    gain.gain.linearRampToValueAtTime(gainVal, audioCtx.currentTime + 4.5);
+    return {osc, gain};
+  }
+
+  /* === DRONE: deep bass foundation === */
+  droneNodes.push(makePad(40,  'sine',     0.55));
+  droneNodes.push(makePad(40,  'triangle', 0.08, 3));
+  droneNodes.push(makePad(80,  'sine',     0.18));
+  droneNodes.push(makePad(120, 'sine',     0.06));
+
+  /* === PAD CHORDS: Am9 voicing in high register === */
+  const padFreqs = [220, 261.6, 293.7, 329.6, 392.0, 440, 523.3, 659.3];
+  padFreqs.forEach((f, i) => {
+    padNodes.push(makePad(f, 'sine', 0.04 - i*0.003, (Math.random()-0.5)*8));
+  });
+
+  /* === SHIMMER: high harmonics === */
+  [880, 1047, 1175, 1319].forEach((f,i) => {
+    padNodes.push(makePad(f, 'sine', 0.012 - i*0.002, (Math.random()-0.5)*6));
+  });
+
+  /* === SLOW LFO modulating pad gain for breathing === */
+  const lfoFreqs = [0.07, 0.11, 0.17, 0.23];
+  padNodes.forEach((n, i) => {
+    const lfo  = audioCtx.createOscillator();
+    const lfoG = audioCtx.createGain();
+    lfo.frequency.value = lfoFreqs[i % lfoFreqs.length];
+    lfoG.gain.value     = 0.018;
+    lfo.connect(lfoG); lfoG.connect(n.gain.gain);
+    lfo.start();
+    pulseNodes.push({osc: lfo});
+  });
+
+  /* === OCCASIONAL HIGH NOTE PLUCK === */
+  function scheduleChime() {
+    if (!musicPlaying) return;
+    const freq  = [523.3, 659.3, 783.9, 880, 1047][Math.floor(Math.random()*5)];
+    const osc   = audioCtx.createOscillator();
+    const gain  = audioCtx.createGain();
+    const filt  = audioCtx.createBiquadFilter();
+    osc.type    = 'sine'; osc.frequency.value = freq;
+    filt.type   = 'bandpass'; filt.frequency.value = freq * 2; filt.Q.value = 2;
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.5);
+    osc.connect(filt); filt.connect(gain); gain.connect(reverb);
+    osc.start(); osc.stop(audioCtx.currentTime + 4);
+    const next = 6000 + Math.random() * 12000;
+    setTimeout(scheduleChime, next);
+  }
+  setTimeout(scheduleChime, 3000);
+}
+
+function startMusic() {
+  if (!audioCtx) buildMusic();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  musicPlaying = true;
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.72, audioCtx.currentTime + 3.5);
+}
+
+function stopMusic() {
+  if (!audioCtx) return;
+  musicPlaying = false;
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2.5);
+}
+
+document.getElementById('bMusic').addEventListener('click', function() {
+  if (musicPlaying) {
+    stopMusic();
+    this.classList.remove('on');
+    this.textContent = '♪ MUSIC';
+  } else {
+    startMusic();
+    this.classList.add('on');
+    this.textContent = '♫ PLAYING';
+  }
+});
+
+
+/* ════════════════════════════════════════════════
+   TECTONIC PLATES OVERLAY
+════════════════════════════════════════════════ */
+let tectonicData = null;
+let showPlates = false;
+
+async function loadTectonicPlates() {
+  try {
+    const r = await fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json');
+    const d = await r.json();
+    tectonicData = d;
+  } catch(e) {
+    console.warn('Tectonic plates unavailable (needs browser):', e.message);
+  }
+}
+
+function drawTectonicPlates() {
+  if (!showPlates || !tectonicData) return;
+  ctx.save();
+  ctx.beginPath(); pathGen(sphere); ctx.clip();
+  ctx.beginPath();
+  pathGen(tectonicData);
+  ctx.strokeStyle = 'rgba(255,140,0,0.55)';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+document.getElementById('bPlates').addEventListener('click', function() {
+  showPlates = !showPlates;
+  this.classList.toggle('on', showPlates);
+  if (showPlates && !tectonicData) loadTectonicPlates();
+});
+
+/* ── Inject plate drawing into render loop ── */
+const _origDrawWorld = drawWorld;
+
+/* ════════════════════════════════════════════════
+   EDUCATIONAL CONTENT DATABASE
+════════════════════════════════════════════════ */
+const EDU = {
+  earthquakes: {
+    icon: '⚡',
+    name: 'EARTHQUAKE',
+    scale: 'Richter / Moment Magnitude (Mw)\nM2.5 = often felt locally\nM5.0 = moderate damage possible\nM6.0 = strong, structural damage\nM7.0 = major, wide devastation\nM8.0+ = great, catastrophic\nM9.0+ = mega-thrust, rare',
+    fact: 'The Earth experiences roughly 500,000 earthquakes per year. About 100,000 of those can be felt, and about 100 cause actual damage.',
+    what: `An earthquake is the shaking of the Earth's surface caused by sudden energy release in the crust, creating seismic waves. They occur when stress built up along geological faults is suddenly released.`,
+    why: `Earth's crust is divided into ~15 major tectonic plates that are constantly moving. Where plates meet — at convergent, divergent, and transform boundaries — stress accumulates over decades until it snaps. The Ring of Fire (Pacific Rim) hosts ~90% of all earthquakes.`,
+    safety: '▶ During shaking: DROP, COVER, HOLD ON under sturdy furniture\n▶ Stay away from windows and exterior walls\n▶ If outdoors: move away from buildings, power lines, trees\n▶ If near coast: immediately move to high ground (tsunami risk)\n▶ After: watch for aftershocks, check for gas leaks',
+    impact: 'Earthquakes kill an average of 25,000 people per year globally. The 2004 Indian Ocean quake (M9.1) triggered a tsunami killing 228,000 people across 14 countries. Economic damages can exceed $200 billion for a single major event.'
+  },
+  volcanoes: {
+    icon: '🌋',
+    name: 'VOLCANO',
+    scale: 'Volcanic Explosivity Index (VEI) 0–8\nVEI 0–1: Non-explosive (Kīlauea)\nVEI 2–3: Explosive (Stromboli)\nVEI 4: Cataclysmic (Eyjafjallajökull 2010)\nVEI 5: Paroxysmal (Mt. St. Helens 1980)\nVEI 6: Colossal (Pinatubo 1991)\nVEI 7: Super-colossal (Tambora 1815)\nVEI 8: Mega-colossal (Yellowstone, prehistoric)',
+    fact: 'There are about 1,500 potentially active volcanoes worldwide. Around 50–70 erupt every year. Indonesia alone has 127 active volcanoes — more than any other country.',
+    what: `Volcanoes are openings in Earth's crust through which molten rock (magma), volcanic ash, and gases escape from below the surface. They can form mountains, islands, and calderas.`,
+    why: 'Volcanoes form at tectonic plate boundaries where one plate sinks beneath another (subduction zones), where plates pull apart (rift zones), and over "hot spots" — plumes of exceptionally hot mantle material rising from deep within the Earth, like those under Hawaii and Iceland.',
+    safety: '▶ Follow evacuation orders immediately — do not wait\n▶ Wear N95 masks to avoid breathing volcanic ash (silica)\n▶ Stay indoors if ash is falling; cover windows and doors\n▶ Goggles protect eyes from ash particles\n▶ Lahars (volcanic mudflows) can travel 100km/h — avoid river valleys near volcanoes',
+    impact: `The 1815 Tambora eruption (VEI 7) caused the "Year Without Summer" — global crop failures and an estimated 71,000 deaths. Volcanoes also create some of Earth's most fertile soil and hundreds of new islands. They contribute to climate regulation over geological timescales.`
+  },
+  severeStorms: {
+    icon: '🌀',
+    name: 'SEVERE STORM',
+    scale: 'Saffir-Simpson Hurricane Wind Scale\nCategory 1: 74–95 mph (minimal)\nCategory 2: 96–110 mph (moderate)\nCategory 3: 111–129 mph (extensive)\nCategory 4: 130–156 mph (extreme)\nCategory 5: 157+ mph (catastrophic)\nTyphoon = Western Pacific name\nCyclone = Indian Ocean / S. Pacific name',
+    fact: 'A mature hurricane releases heat energy at the rate of about 5–20 × 10¹³ watts — equivalent to 10,000 nuclear bombs per day. It generates about half that as kinetic energy of the winds.',
+    what: 'Tropical cyclones (hurricanes, typhoons) are rapidly rotating storm systems characterized by a low-pressure center, strong winds, and a spiral arrangement of thunderstorms producing heavy rain and storm surge.',
+    why: `They form over warm ocean water (above 26°C/79°F) when moist air rises rapidly, creating a low-pressure system. The Coriolis effect from Earth's rotation causes the storm to spin. They weaken over land or cold water when their energy source is cut off.`,
+    safety: '▶ Evacuate coastal areas when ordered — storm surge kills more than wind\n▶ Board windows with plywood, not tape\n▶ Store 3 days of water (1 gallon/person/day)\n▶ During the eye: do NOT go outside — the other eyewall is coming\n▶ Wait for official all-clear before returning',
+    impact: 'Hurricane Katrina (2005) caused $125 billion in damage and killed 1,833. Typhoon Haiyan (2013) produced the highest wind speeds ever recorded at landfall (195 mph). Storm surge — not wind — is the deadliest threat, capable of inundating entire cities within hours.'
+  },
+  wildfires: {
+    icon: '🔥',
+    name: 'WILDFIRE',
+    scale: 'Fire Weather Index (FWI)\nLow: Minimal spread risk\nModerate: Some risk of spread\nHigh: Fire spreads readily\nVery High: Difficult to control\nExtreme: Violent, dangerous fire\nKey factors: Temperature, humidity,\nwind speed, fuel moisture content',
+    fact: 'Lightning is the most common natural cause of wildfires, starting about 8,000 fires per year in the US alone. Fire can create its own weather — pyrocumulonimbus clouds can generate lightning, causing new fires kilometers away.',
+    what: 'A wildfire is an unplanned, uncontrolled fire burning in natural vegetation — forests, grasslands, shrublands. It requires three elements: fuel (dry vegetation), oxygen, and heat. Wildfires are natural and even necessary for some ecosystems, but can become catastrophic.',
+    why: 'Climate change is making fires more frequent and severe by creating hotter, drier conditions and longer fire seasons. Wind is the most critical factor — it provides oxygen, dries out fuel, carries embers up to 2km ahead of the fire front, and pushes fire up slopes.',
+    safety: '▶ Evacuate early — fires can move faster than you can run\n▶ If trapped: lie face-down in a ditch or depression, cover with non-synthetic clothing\n▶ Close all windows and doors; seal gaps with wet towels\n▶ Clear 30 feet of defensible space around your home\n▶ N95 mask essential for smoke — wildfire smoke is extremely toxic',
+    impact: `Australia's 2019–20 "Black Summer" burned 18.6 million hectares — an area larger than Syria — and killed or displaced an estimated 3 billion animals. The 2021 global wildfire season emitted 1.76 billion tonnes of CO₂. Wildfires are now a major driver of climate feedback loops.`
+  },
+  floods: {
+    icon: '💧',
+    name: 'FLOOD',
+    scale: 'Return Period (how often expected)\n2-year flood: Moderate event\n10-year flood: Significant flooding\n50-year flood: Major flooding\n100-year flood: Severe, infrastructure damage\n500-year flood: Catastrophic, rare\nNote: "100-year" means 1% chance per year\n— these can happen in consecutive years',
+    fact: 'Floods are the most common and deadly natural disaster globally, affecting more people annually than any other hazard. Just 6 inches of moving water can knock an adult off their feet; 2 feet can sweep away most vehicles.',
+    what: 'A flood occurs when water overflows or inundates land that is normally dry. Types include: river floods (from heavy rain/snowmelt), flash floods (intense local rain), storm surge (coastal, from hurricanes), and dam/levee failures.',
+    why: 'Heavy rainfall saturates soil and overwhelms drainage systems. Urbanization increases flood risk by replacing permeable land with concrete. Deforestation removes trees that absorb water and anchor soil. Climate change is intensifying the water cycle — making wet areas wetter and dry areas drier.',
+    safety: `▶ Never walk or drive through flooded roads — "Turn around, don't drown"\n▶ Move to higher ground immediately when warned\n▶ 6 inches of water can knock you down; 12 inches carries a car\n▶ Avoid contact with floodwater — it contains sewage and pathogens\n▶ Don't return home until authorities say it's safe`,
+    impact: 'The 1931 China floods may have killed up to 4 million people — possibly the deadliest natural disaster in human history. Floods cause about $40 billion in global economic damage annually. In 2022, Pakistan floods submerged one-third of the entire country, affecting 33 million people.'
+  },
+  dustHaze: {
+    icon: '🌫',
+    name: 'DUST & HAZE EVENT',
+    scale: 'Air Quality Index (AQI) — PM2.5 particles\n0–50 (Green): Good\n51–100 (Yellow): Moderate\n101–150 (Orange): Unhealthy for sensitive groups\n151–200 (Red): Unhealthy for all\n201–300 (Purple): Very Unhealthy\n301+ (Maroon): Hazardous\nSaharan dust can cross the Atlantic in 5–7 days',
+    fact: `The Sahara Desert is the world's largest source of dust, releasing an estimated 400–700 million tonnes of particles per year. Saharan dust fertilizes the Amazon rainforest — the iron and phosphorus in the dust is essential to Amazonian plant life.`,
+    what: 'Dust and haze events occur when strong winds lift fine particles of soil, sand, and pollutants high into the atmosphere. They reduce visibility, degrade air quality, and can travel thousands of kilometers across continents and oceans.',
+    why: 'Major sources include the Sahara, Arabian Peninsula, Gobi Desert, and the Taklamakan Desert. Drought, land degradation, and poor agricultural practices expose bare soil to wind erosion. Climate change is expanding desert regions and intensifying wind events.',
+    safety: '▶ Wear N95 or P100 masks outdoors — PM2.5 particles penetrate deep into lungs\n▶ Keep windows and doors closed\n▶ Run HEPA air purifiers indoors\n▶ Avoid outdoor exercise during AQI 150+\n▶ Those with asthma or heart disease face highest risk — have rescue inhalers ready',
+    impact: 'Air pollution (including dust) kills an estimated 7 million people annually worldwide (WHO). Dust storms can travel 12,000 km — Saharan dust regularly reaches Europe and the Americas. In 2020, a massive Saharan dust plume nicknamed "Godzilla" crossed the Atlantic and set air quality records across the southeastern US.'
+  },
+  landslides: {
+    icon: '🏔',
+    name: 'LANDSLIDE',
+    scale: 'Landslide Velocity Classes\nExtremely slow: <16mm/year (creep)\nVery slow: <1.6m/year\nSlow: <13m/month\nModerate: <1.8m/hour\nRapid: <3m/minute\nVery rapid: <5m/second\nExtremely rapid: >5m/second (lethal)\nDebris flows can reach 200 km/h',
+    fact: 'Landslides kill about 4,600 people per year worldwide, cause $2–4 billion in damages, and affect all 50 US states. They often occur as secondary events triggered by earthquakes, volcanic eruptions, or intense rainfall.',
+    what: 'A landslide is the movement of rock, earth, or debris down a slope due to gravity. Types include: rockfalls, debris flows (fast-moving water-saturated debris), mudflows (lahars from volcanoes), and slow earthflows. They can trigger tsunamis when entering water bodies.',
+    why: `Landslides are triggered when the driving forces (gravity, water pressure, earthquake shaking) exceed the slope's strength. Heavy rainfall saturates soil, increasing its weight and reducing friction. Deforestation removes tree roots that hold soil in place. Mountain regions with steep slopes and seismic activity are highest risk.`,
+    safety: `▶ Know your area's landslide history before buying property\n▶ During heavy rain: listen for unusual sounds — cracking, rumbling\n▶ Watch for tilted trees, doors/windows that stick — signs of slow movement\n▶ If a landslide starts: move away laterally, not downhill\n▶ After: avoid the slide area — it may be unstable for days`,
+    impact: 'In 2017, the Freetown mudslide in Sierra Leone killed over 1,000 people after 24 hours of intense rainfall. In 2023, a single landslide in Enga Province, Papua New Guinea buried over 2,000 people. Landslide risk is increasing globally due to climate change bringing more intense rainfall events.'
+  },
+  seaLakeIce: {
+    icon: '🧊',
+    name: 'SEA & LAKE ICE EVENT',
+    scale: 'Arctic Sea Ice Extent Anomaly\n0 = historical average\n-1M km²: Significant below-average\n-2M km²: Extreme minimum (rare)\nSea ice thickness: 1–3m first-year\n3–5m+ multi-year ice\nIce shelf collapse velocity:\nJakobshavn: 20–46m/day calving',
+    fact: `Arctic sea ice acts as Earth's "air conditioner" — its white surface reflects 80% of sunlight back to space. When it's replaced by dark ocean, that ocean absorbs 94% of sunlight instead, dramatically accelerating warming in a feedback loop.`,
+    what: 'Sea and lake ice events include unusual freezing or melting of ocean and lake surfaces, iceberg calving, ice shelf collapse, and Arctic/Antarctic sea ice extent anomalies. These are increasingly tracked as major climate indicators.',
+    why: 'Arctic temperatures are rising 3–4 times faster than the global average — a phenomenon called Arctic amplification. As sea ice melts, darker ocean absorbs more heat, melting more ice. Glaciers and ice sheets also melt from warming ocean water eating at their base.',
+    safety: '▶ Never walk on unknown ice — it can be thin even if it looks solid\n▶ Minimum safe thickness: 4 inches for a person, 8–12 for a snowmobile\n▶ Carry ice picks to self-rescue if you fall through\n▶ Coastal communities: rising seas and increased storm surge from ice loss\n▶ Follow local ice safety bulletins in winter',
+    impact: 'Arctic sea ice extent reached its second-lowest September minimum in 2020. If the Greenland Ice Sheet melts completely, global sea level would rise by about 7.2 meters (23.6 feet) — inundating most coastal cities. The West Antarctic Ice Sheet collapse could add another 3.3 meters. These changes unfold over centuries but are now accelerating.'
+  }
+};
+
+/* ── "Did You Know" rotating facts ── */
+const DYK_FACTS = [
+  `⚡ The Ring of Fire, a 40,000 km horseshoe around the Pacific, hosts 90% of all earthquakes and 75% of Earth's volcanoes.`,
+  `🌍 Earth's tectonic plates move at about the same rate as your fingernails grow — 2 to 10 cm per year.`,
+  '🌊 The 2004 Indian Ocean tsunami radiated energy equivalent to 9,560 Hiroshima atomic bombs.',
+  '🔥 A wildfire can create its own weather system. Pyrocumulonimbus clouds can generate lightning — starting new fires kilometers away.',
+  '🌋 Lava from Kīlauea has added about 875 acres of new land to the Big Island of Hawaii since 1983.',
+  '💧 Floods are the most common natural disaster globally, affecting more people annually than any other hazard.',
+  '🌀 A fully developed hurricane releases heat energy equivalent to exploding a 10-megaton nuclear bomb every 20 minutes.',
+  '🏔 The 1958 Lituya Bay landslide triggered a mega-tsunami that created a wave 524 meters tall — the largest ever recorded.',
+  '🌫 Saharan dust fertilizes the Amazon rainforest — 22,000 tonnes of phosphorus from the Sahara lands in the Amazon each year.',
+  '🧊 If all glaciers and ice sheets melted, global sea level would rise by about 65 meters (213 feet).',
+  '⚡ Deep earthquakes (>300 km) occur in subducting plates and can be felt over enormous areas — yet cause little surface damage.',
+  `🌋 Mount Tambora's 1815 eruption caused "the Year Without a Summer" — 1816 saw snow in June across North America and Europe.`,
+  '💧 In 1958, a rapidly rising lake in Tanzania triggered a CO₂ gas burst that suffocated 1,700 people — a volcanic limnic eruption.',
+  '🔥 The 1871 Peshtigo Fire in Wisconsin killed 1,500–2,500 people — the deadliest wildfire in US history — on the same day as the Great Chicago Fire.',
+  '🌀 The eye of a large hurricane can be 65 km wide, with calm winds, sunshine, and low pressure — surrounded by the most violent winds on Earth.',
+  '⚡ Earthquakes on the Sun (marsquakes, starquakes) also occur — a starquake on SGR 1806-20 in 2004 released more energy in 0.2 seconds than the Sun emits in 250,000 years.',
+  `🏔 Landslides move more material each year than all the world's rivers combined.`,
+  '🧊 Arctic sea ice reflects 80% of sunlight. Open ocean absorbs 94%. This is why Arctic warming is accelerating 4x faster than the global average.',
+];
+let dykIdx = 0;
+
+function rotateDYK() {
+  const inner = document.getElementById('tk-inner');
+  if (!inner) return;
+  const fact = DYK_FACTS[dykIdx % DYK_FACTS.length];
+  dykIdx++;
+  inner.textContent = fact;
+  inner.style.animation = 'none';
+  inner.offsetHeight; /* reflow */
+  inner.style.animation = 'tick 18s linear forwards';
+  setTimeout(rotateDYK, 18000);
+}
+
+/* ── LEARN panel logic ── */
+let learnOpen = false;
+
+function showLearnContent(type) {
+  const d = EDU[type];
+  if (!d) return;
+  document.getElementById('learn-icon').textContent = d.icon;
+  document.getElementById('learn-name').textContent = d.name;
+  document.getElementById('learn-scale').textContent = d.scale;
+  document.getElementById('learn-fact').textContent = d.fact;
+  document.getElementById('learn-what').textContent = d.what;
+  document.getElementById('learn-why').textContent = d.why;
+  document.getElementById('learn-safety').textContent = d.safety;
+  document.getElementById('learn-impact').textContent = d.impact;
+  document.querySelectorAll('.ltab').forEach(t => t.classList.toggle('active', t.dataset.hz === type));
+}
+
+document.querySelectorAll('.ltab').forEach(tab => {
+  tab.addEventListener('click', () => showLearnContent(tab.dataset.hz));
+});
+
+document.getElementById('bLearn').addEventListener('click', function() {
+  learnOpen = !learnOpen;
+  document.getElementById('learn-panel').classList.toggle('open', learnOpen);
+  this.classList.toggle('on', learnOpen);
+  if (learnOpen) showLearnContent('earthquakes');
+});
+
+document.getElementById('learn-close').addEventListener('click', () => {
+  learnOpen = false;
+  document.getElementById('learn-panel').classList.remove('open');
+  document.getElementById('bLearn').classList.remove('on');
+});
+
+/* ── Enhance render loop to draw plates ── */
+const _render_orig = render;
+
+/* Patch render to include tectonic plates after drawWorld */
+const render_patched = function() {
+  requestAnimationFrame(render_patched);
+  t += 1/60;
+  if (!dragging) {
+    rotation[0] += velLon;
+    rotation[1] = Math.max(-90, Math.min(90, rotation[1] + velLat));
+    velLon *= 0.92; velLat *= 0.92;
+    if (autoOrbit) rotation[0] += 0.12;
+  }
+  updateProjection();
+  ctx.fillStyle = '#000308';
+  ctx.fillRect(0, 0, W, H);
+  drawStars();
+  drawGlobeBackground();
+  drawWorld();
+  drawTectonicPlates();
+  if (heatmapMode) {
+    drawHeatmap();
+  } else {
+    drawEvents();
+  }
+  /* Globe flash overlay for breaking alerts */
+  if (globeFlashAlpha > 0.01) {
+    ctx.save();
+    ctx.beginPath(); pathGen(sphere); ctx.clip();
+    ctx.fillStyle = `rgba(239,68,68,${globeFlashAlpha * 0.18})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    globeFlashAlpha *= 0.93;
+  }
+};
+
+/* ════════════════════════════════════════════════
+   FEATURE 1 — SHAKE ALERT / BREAKING NEWS
+════════════════════════════════════════════════ */
+let alertedEventIds = new Set();
+let breakingTimeout = null;
+
+function checkBreakingEvents(events) {
+  const threshold = 6.5;
+  const recent = events.filter(e =>
+    e.type === 'earthquakes' &&
+    (e.mag || 0) >= threshold &&
+    !alertedEventIds.has(e.title + e.lat)
+  );
+  if (!recent.length) return;
+
+  // Sort by magnitude desc, pick biggest
+  recent.sort((a, b) => (b.mag || 0) - (a.mag || 0));
+  const ev = recent[0];
+  alertedEventIds.add(ev.title + ev.lat);
+
+  const hz  = HZ['earthquakes'];
+  const col = quakeColor(ev.mag);
+  const mag = ev.mag ? ev.mag.toFixed(1) : '?';
+  const depth = ev.depth ? ev.depth + ' km depth' : 'Shallow';
+  const elapsed = ev.date ? timeSince(ev.date) : '';
+
+  document.getElementById('brk-title').textContent = `M${mag} — ${ev.title}`;
+  document.getElementById('brk-stats').textContent =
+    `${depth} · ${ev.lat.toFixed(2)}°, ${ev.lng.toFixed(2)}° ${elapsed ? '· ' + elapsed : ''}`;
+
+  // Color the border by mag
+  const el = document.getElementById('breaking');
+  el.style.borderColor = col;
+  el.style.borderTopColor = col;
+  el.style.boxShadow = `0 0 40px ${col}55, 0 0 80px ${col}22`;
+  document.getElementById('brk-pulse').style.background = col;
+  document.getElementById('brk-pulse').style.boxShadow = `0 0 12px ${col}`;
+  document.getElementById('brk-tag').style.color = col;
+
+  // Flash the globe rim
+  flashGlobe(col);
+
+  // Fly to event
+  flyTo(-ev.lng, ev.lat * 0.4);
+
+  // Show alert
+  el.classList.add('show');
+
+  // Play alert beep if music context exists
+  playAlertBeep(col);
+
+  // Auto dismiss after 18s
+  if (breakingTimeout) clearTimeout(breakingTimeout);
+  breakingTimeout = setTimeout(() => el.classList.remove('show'), 18000);
+}
+
+function timeSince(ts) {
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60)   return sec + 's ago';
+  if (sec < 3600) return Math.floor(sec/60) + 'm ago';
+  if (sec < 86400)return Math.floor(sec/3600) + 'h ago';
+  return Math.floor(sec/86400) + 'd ago';
+}
+
+let globeFlashAlpha = 0;
+function flashGlobe(col) {
+  globeFlashAlpha = 1.0;
+  // Decays in render loop
+}
+
+function playAlertBeep() {
+  try {
+    const ac = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtx) audioCtx = ac;
+    const beeps = [880, 1047, 1319];
+    beeps.forEach((freq, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.frequency.value = freq;
+      o.type = 'sine';
+      g.gain.setValueAtTime(0, ac.currentTime + i * 0.14);
+      g.gain.linearRampToValueAtTime(0.18, ac.currentTime + i * 0.14 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + i * 0.14 + 0.35);
+      o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + i * 0.14);
+      o.stop(ac.currentTime + i * 0.14 + 0.4);
+    });
+  } catch(e) {}
+}
+
+document.getElementById('brk-close').addEventListener('click', () => {
+  document.getElementById('breaking').classList.remove('show');
+  if (breakingTimeout) clearTimeout(breakingTimeout);
+});
+
+/* ════════════════════════════════════════════════
+   FEATURE 2 — DAILY BRIEFING
+════════════════════════════════════════════════ */
+function buildBriefing() {
+  const now = Date.now();
+  const day = 86400000;
+  const recent = EVENTS.filter(e => (now - (e.date || 0)) < day * 30);
+
+  // Headline: biggest quake
+  const quakes = recent.filter(e => e.type === 'earthquakes').sort((a,b) => (b.mag||0)-(a.mag||0));
+  const biggest = quakes[0];
+  let lead = '';
+  if (biggest) {
+    lead = `M${biggest.mag?.toFixed(1) || '?'} EARTHQUAKE — ${biggest.title}. `;
+  }
+  const fires   = recent.filter(e => e.type === 'wildfires').length;
+  const storms  = recent.filter(e => e.type === 'severeStorms').length;
+  const floods  = recent.filter(e => e.type === 'floods').length;
+  const volcans = recent.filter(e => e.type === 'volcanoes').length;
+  lead += `Active: ${fires} wildfires, ${storms} severe storms, ${floods} floods, ${volcans} volcanic events.`;
+
+  document.getElementById('brfg-lead').textContent = lead;
+
+  // Per-type cards
+  const grid = document.getElementById('brfg-grid');
+  grid.innerHTML = '';
+  const types = Object.keys(HZ);
+  types.forEach(type => {
+    const evs = recent.filter(e => e.type === type);
+    if (!evs.length) return;
+    const hz  = HZ[type];
+    const top = type === 'earthquakes'
+      ? evs.sort((a,b)=>(b.mag||0)-(a.mag||0))[0]
+      : evs[0];
+    const card = document.createElement('div');
+    card.className = 'brfg-card';
+    card.style.borderLeftColor = hz.hex;
+    card.innerHTML = `
+      <div class="brfg-card-type" style="color:${hz.hex}">${hz.icon} ${hz.label}</div>
+      <div class="brfg-card-title">${top.title}</div>
+      <div class="brfg-card-stat">${evs.length} active event${evs.length>1?'s':''}${top.mag?' · M'+top.mag.toFixed(1):''}</div>
+    `;
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', () => {
+      flyTo(-top.lng, top.lat * 0.4);
+      document.getElementById('briefing').classList.remove('open');
+      document.getElementById('bBrief').classList.remove('on');
+    });
+    grid.appendChild(card);
+  });
+
+  document.getElementById('brfg-date').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+let briefingOpen = false;
+document.getElementById('bBrief').addEventListener('click', function() {
+  briefingOpen = !briefingOpen;
+  if (briefingOpen) buildBriefing();
+  document.getElementById('briefing').classList.toggle('open', briefingOpen);
+  this.classList.toggle('on', briefingOpen);
+});
+document.getElementById('brfg-close').addEventListener('click', () => {
+  briefingOpen = false;
+  document.getElementById('briefing').classList.remove('open');
+  document.getElementById('bBrief').classList.remove('on');
+});
+
+/* ════════════════════════════════════════════════
+   FEATURE 3 — SHARE A DISASTER
+════════════════════════════════════════════════ */
+let shareEvent = null;
+
+function openShare(ev, col) {
+  shareEvent = ev;
+  const hz = HZ[ev.type] || {icon:'⚡', label:'EVENT'};
+  document.getElementById('share-stripe').style.background =
+    `linear-gradient(90deg,${col},${col}88,${col})`;
+  document.getElementById('share-icon').textContent = hz.icon;
+  document.getElementById('share-event-name').textContent = ev.title;
+  document.getElementById('ss-mag').textContent =
+    ev.mag ? 'M' + ev.mag.toFixed(1) : hz.label;
+  document.getElementById('ss-mag').style.color = col;
+  document.getElementById('ss-depth').textContent =
+    ev.depth ? ev.depth + ' km' : 'Surface';
+  document.getElementById('ss-depth').style.color = col;
+  document.getElementById('ss-coords').textContent =
+    ev.lat.toFixed(1) + '°, ' + ev.lng.toFixed(1) + '°';
+  document.getElementById('ss-coords').style.color = col;
+  // Random quick fact
+  document.getElementById('share-fact').textContent =
+    DYK_FACTS[Math.floor(Math.random() * DYK_FACTS.length)].replace(/^[^\s]+\s/, '');
+  document.getElementById('share-overlay').classList.add('open');
+}
+
+document.getElementById('pop-share').addEventListener('click', () => {
+  const name  = document.getElementById('pop-name').textContent;
+  const type  = document.getElementById('pop-type').textContent;
+  const col   = document.getElementById('pop-stripe').style.background;
+  // Find matching event
+  const ev = EVENTS.find(e => e.title === name) || shareEvent;
+  if (ev) openShare(ev, HZ[ev.type]?.hex || '#00e5ff');
+});
+
+document.getElementById('share-dismiss').addEventListener('click', () => {
+  document.getElementById('share-overlay').classList.remove('open');
+});
+
+document.getElementById('share-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('share-overlay'))
+    document.getElementById('share-overlay').classList.remove('open');
+});
+
+document.getElementById('share-copy').addEventListener('click', () => {
+  if (!shareEvent) return;
+  const ev = shareEvent;
+  const hz = HZ[ev.type] || {icon:'⚡', label:'EVENT'};
+  const text = `${hz.icon} ${hz.label} ALERT — NEXUS Global Hazard Monitor\n\n`
+    + `📍 ${ev.title}\n`
+    + (ev.mag ? `💥 Magnitude: M${ev.mag.toFixed(1)}\n` : '')
+    + (ev.depth ? `⬇ Depth: ${ev.depth} km\n` : '')
+    + `🌐 Coordinates: ${ev.lat.toFixed(2)}°, ${ev.lng.toFixed(2)}°\n`
+    + `📡 Source: ${ev.src}\n\n`
+    + `Track global hazards in real time → nexus-hazard.earth`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('share-copy').textContent = '✅ COPIED!';
+    setTimeout(() => document.getElementById('share-copy').textContent = '📋 COPY TEXT', 2000);
+  }).catch(() => alert('Copy not supported in this browser.'));
+});
+
+document.getElementById('share-tw').addEventListener('click', () => {
+  if (!shareEvent) return;
+  const ev = shareEvent;
+  const hz = HZ[ev.type] || {icon:'⚡'};
+  const text = encodeURIComponent(
+    `${hz.icon} ${ev.type === 'earthquakes' ? 'M' + ev.mag?.toFixed(1) + ' EARTHQUAKE' : hz.label.toUpperCase()} — ${ev.title}\n\nTracking global hazards on NEXUS 🌍\n#earthquake #naturaldisaster #nexushazard`
+  );
+  window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+});
+
+document.getElementById('share-img').addEventListener('click', () => {
+  // Draw share card to a canvas and save
+  const card = document.getElementById('share-card');
+  if (!window.html2canvas) {
+    // Fallback: just copy text
+    document.getElementById('share-copy').click();
+    document.getElementById('share-img').textContent = '📋 COPIED (no renderer)';
+    setTimeout(() => document.getElementById('share-img').textContent = '🖼 SAVE IMAGE', 2000);
+    return;
+  }
+  html2canvas(card).then(c => {
+    const a = document.createElement('a');
+    a.download = 'nexus-event.png';
+    a.href = c.toDataURL();
+    a.click();
+  });
+});
+
+/* ════════════════════════════════════════════════
+   FEATURE 4a — HAZARD HEATMAP
+════════════════════════════════════════════════ */
+let heatmapMode = false;
+
+function drawHeatmap() {
+  if (!heatmapMode) return;
+  const R  = globeRadius();
+  const cx = W / 2, cy = H / 2;
+
+  ctx.save();
+  ctx.beginPath(); pathGen(sphere); ctx.clip();
+  ctx.globalCompositeOperation = 'screen';
+
+  EVENTS.forEach(ev => {
+    if (!activeTypes.has(ev.type)) return;
+    if (ev.type === 'earthquakes' && (ev.mag || 0) < minMag) return;
+    const pt = projection([ev.lng, ev.lat]);
+    if (!pt) return;
+    const hz   = HZ[ev.type];
+    const intensity = ev.type === 'earthquakes' ? Math.max(0.3, (ev.mag || 4) / 9) : 0.55;
+    const radius    = ev.type === 'earthquakes'
+      ? Math.max(20, ((ev.mag || 4) / 9) * R * 0.22)
+      : R * 0.1;
+
+    const g = ctx.createRadialGradient(pt[0], pt[1], 0, pt[0], pt[1], radius);
+    g.addColorStop(0,   hz.hex + Math.round(intensity * 180).toString(16).padStart(2,'0'));
+    g.addColorStop(0.4, hz.hex + '44');
+    g.addColorStop(1,   hz.hex + '00');
+    ctx.beginPath();
+    ctx.arc(pt[0], pt[1], radius, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  });
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.restore();
+}
+
+document.getElementById('bHeat').addEventListener('click', function() {
+  heatmapMode = !heatmapMode;
+  this.classList.toggle('on', heatmapMode);
+  document.getElementById('heatmap-label').classList.toggle('show', heatmapMode);
+});
+
+/* ════════════════════════════════════════════════
+   FEATURE 4b — AGE-LEVEL READING TOGGLE
+════════════════════════════════════════════════ */
+const AGE_MODES = ['ALL', 'KIDS', 'TEEN', 'ADULT'];
+let ageModeIdx = 0;
+
+// Simplified / expanded text variants for each hazard × level
+const EDU_KIDS = {
+  earthquakes: {
+    what: `An earthquake is when the ground shakes! Deep underground, big pieces of rock are always slowly moving. Sometimes they get stuck and then suddenly slip — that causes the shaking. It can happen for just a few seconds or last a whole minute!`,
+    why:  `The Earth is like a cracked egg. The pieces (called tectonic plates) move very slowly — about as fast as your fingernails grow. Where the pieces crash or rub together, we get earthquakes. That's why some places shake a lot more than others!`,
+    safety: `✋ If the ground starts shaking: STOP, DROP, and hold on to something strong!\n🪑 Hide under a sturdy table or desk\n🚪 Stay AWAY from windows — glass can break!\n🌊 If you're at the beach, run uphill fast after shaking stops`,
+    impact: `Big earthquakes can knock down buildings and cause huge waves called tsunamis. Scientists use special tools called seismographs to measure and study them so they can keep people safe!`
+  },
+  volcanoes: {
+    what: `A volcano is like a giant hole in the ground where hot melted rock (called lava) comes out! The lava comes from deep inside the Earth where it's super hot — even hotter than your oven times a thousand!`,
+    why:  `Deep inside Earth there is melted rock called magma. It's so hot that it pushes up through cracks. When it reaches the surface it comes out as lava, ash, and steam. Volcanoes often happen near the edges of the big puzzle pieces the Earth is made of!`,
+    safety: `🏃 Always follow grown-ups and listen to evacuation orders\n😷 Wear a mask so you don't breathe in ash — it can hurt your lungs\n🪟 Stay indoors and close windows when ash is falling\n🌊 Stay away from rivers near volcanoes — hot mud can flow very fast!`,
+    impact: `Volcanoes can be scary, but they also create some of the most beautiful islands in the world — like Hawaii! Volcanic soil is also super good for growing food. Scientists who study volcanoes are called volcanologists!`
+  },
+  severeStorms: {
+    what: `A hurricane is a giant spinning storm that forms over warm ocean water! It has very strong winds and lots of rain. The middle part — called the eye — is actually very calm, but the rest is very dangerous.`,
+    why:  `Warm ocean water heats up the air above it. That warm air rises fast and starts spinning because the Earth is rotating. The storm gets bigger and bigger as it picks up more energy from the warm water!`,
+    safety: `🏠 If a hurricane is coming, go indoors and away from windows\n🎒 Have a bag packed with water, food, and important items\n🚗 If told to leave, go with your family right away — don't wait!\n🌊 The most dangerous part is the storm surge — water that floods the coast`,
+    impact: `Hurricanes are one of the most powerful storms on Earth. Scientists fly special planes called "hurricane hunters" right INTO the storm to measure it and help keep people safe!`
+  },
+  wildfires: {
+    what: `A wildfire is a big fire that spreads through forests, grasslands, or bushes. It needs three things: dry plants to burn, oxygen from air, and heat to start it. Lightning or people can accidentally start them.`,
+    why:  `When it hasn't rained for a long time, plants dry out and can burn easily. Wind makes fires spread faster by blowing embers ahead. Hot temperatures make everything even drier. That's why summers are the most dangerous time!`,
+    safety: `🚗 If you see a wildfire nearby, tell an adult and leave the area fast\n😷 Wear a mask outdoors when it's smoky — smoke hurts your lungs\n🏠 Keep windows and doors closed to keep smoke out\n🌲 Never play with matches or fire near dry plants or trees!`,
+    impact: `Wildfires burn millions of acres every year. But some forests actually NEED fire to be healthy! Certain pine cones only open and drop seeds after a fire. Animals and plants have adapted to survive and even use fire over thousands of years.`
+  },
+  floods: {
+    what: `A flood is when too much water covers land that's normally dry. It can happen when it rains a LOT, when rivers overflow, or when big ocean waves crash on shore during storms. Even a small amount of moving water can be very powerful!`,
+    why:  `The ground can only soak up a certain amount of rain. When it rains harder than the ground can soak up, water runs along the surface and collects in low areas. Cities with lots of concrete are especially prone to flooding because concrete doesn't absorb water!`,
+    safety: `🚶 Never walk through flooded streets — even ankle-deep water can knock you down!\n🚗 Never drive through flooded roads\n⛰ Move to higher ground if flooding starts\n🦠 Don't touch floodwater — it can contain germs and chemicals`,
+    impact: `Floods are the most common natural disaster on Earth! They happen on every continent except Antarctica. Farmers actually LIKE small floods sometimes because flooding rivers bring rich soil that helps crops grow!`
+  },
+  dustHaze: {
+    what: `A dust storm is when very strong winds pick up millions of tiny sand and dirt particles and blow them through the air. It can turn the sky orange or brown, make it hard to see, and make it hard to breathe!`,
+    why:  `In dry desert areas, there's loose sand and dirt with no plants holding it down. When strong winds blow, they lift all that dust high into the sky. The dust can travel thousands of miles — dust from Africa's Sahara Desert blows all the way to the Amazon rainforest!`,
+    safety: `😷 Wear a mask or cover your face with a cloth if you must go outside\n🏠 Stay inside with windows and doors closed\n💨 If caught outside, keep your back to the wind and protect your eyes\n🚗 Don't drive in low visibility — pull over safely`,
+    impact: `Desert dust sounds bad, but it actually helps our planet! Saharan dust carries iron and phosphorus that fertilizes the Amazon rainforest and feeds tiny ocean plants. Without it, the rainforest and oceans wouldn't be as healthy!`
+  },
+  landslides: {
+    what: `A landslide is when rocks, mud, or dirt suddenly slide down a hill or mountain. They can happen very fast — some move faster than a car! Heavy rain, earthquakes, or volcanoes can make them start.`,
+    why:  `On steep hills, rain can soak into the soil and make it very heavy and slippery. The soil might slide on top of harder rock below. Trees help hold soil in place with their roots, so when forests are cut down, landslides become more likely!`,
+    safety: `🏔 If you live near steep hills, know the local landslide risk\n🌧 After very heavy rain, be careful near slopes\n👂 Listen for rumbling or cracking sounds — that can be a warning!\n🏃 If a landslide starts, run SIDEWAYS — not straight down the hill`,
+    impact: `Landslides happen in every country in the world! In mountainous places like Nepal, Indonesia, and Colombia, they happen very often. Scientists use satellites to watch mountains from space and give warnings when they notice slopes starting to move.`
+  },
+  seaLakeIce: {
+    what: `Sea ice forms when ocean water gets cold enough to freeze. It covers the Arctic (North Pole area) and Antarctic (South Pole area). Scientists watch it closely because when it melts, it can affect weather, animals, and sea levels all over the world!`,
+    why:  `The Earth is getting warmer because of greenhouse gases in the air. The Arctic is warming about 4 times faster than the rest of the planet! As temperatures rise, more sea ice melts, and the darker water absorbs more sunlight, making it even warmer — a cycle scientists call a "feedback loop."`,
+    safety: `⛸ Never walk on frozen lakes or rivers unless an adult checks the ice is thick enough\n🧊 Minimum safe ice thickness is 4 inches for one person\n📱 Always check ice safety conditions before going on frozen water\n🌡 Ice that looks solid on top might be thin underneath!`,
+    impact: `Arctic sea ice is like Earth's air conditioner — its white surface reflects sunlight back to space. When it melts, it exposes dark ocean that absorbs heat instead. Polar bears, walruses, and seals depend on sea ice to hunt and rest. Protecting sea ice helps protect these amazing animals!`
+  }
+};
+
+const EDU_TEEN = {
+  earthquakes: {
+    what: `Earthquakes occur when tectonic plates — massive slabs of Earth's crust — suddenly slip along fault lines, releasing stored elastic energy as seismic waves. The point of rupture underground is the hypocenter; the point directly above it on the surface is the epicenter.`,
+    why:  `Earth's crust is divided into ~15 major tectonic plates constantly moving at 2–10 cm/year. At convergent boundaries (plates colliding), divergent boundaries (plates separating), and transform boundaries (plates sliding past each other), stress builds for decades until it releases catastrophically.`,
+    safety: `• During shaking: Drop, Cover (under a desk), Hold On until shaking stops\n• Do NOT run outside — most injuries come from falling objects near doorways\n• After: Check for gas leaks (smell), structural damage, aftershocks\n• Near coastlines: Earthquake = possible tsunami — move to high ground immediately`,
+    impact: `The 1960 Valdivia earthquake (M9.5) remains the most powerful ever recorded, generating tsunamis that crossed the Pacific. Today, seismograph networks detect 500,000 earthquakes annually. Early warning systems can now give 10–30 seconds of warning before shaking arrives.`
+  },
+  volcanoes: {
+    what: `Volcanoes are vents in Earth's crust through which magma, gases, and ash are expelled. They form at subduction zones (one plate diving under another), divergent plate boundaries, and mantle hotspots. Eruption styles range from gentle lava flows to violent explosive eruptions.`,
+    why:  `The Volcanic Explosivity Index (VEI) measures eruption size on a 0–8 scale. Explosive eruptions occur when magma is high in silica and viscous, trapping gases until pressure explodes. Effusive eruptions (like Hawaii) have low-silica magma that flows more freely. Both create permanent new land.`,
+    safety: `• Evacuate immediately when ordered — volcanic events are unpredictable\n• Pyroclastic flows (superheated gas + debris) reach 700°C and move at 700 km/h — completely unsurvivable\n• Ash: wear N95 masks, goggles; it damages lungs and engines\n• Lahars (volcanic mudflows) can travel 100km and arrive hours after eruption`,
+    impact: `The 1991 Pinatubo eruption (VEI 6) injected 20 million tonnes of SO₂ into the stratosphere, reducing global temperatures by 0.5°C for 2 years. Volcanoes also build islands, create fertile soil, and provide geothermal energy. Iceland gets 90% of its heating from volcanic geothermal energy.`
+  },
+  severeStorms:{
+    what:`Tropical cyclones (called hurricanes in the Atlantic, typhoons in the Pacific, cyclones in the Indian Ocean) are rapidly rotating low-pressure systems fueled by warm ocean water evaporation. The eye wall contains the strongest winds; the calm eye at the center is a deceptive break in the fury.`,
+    why:`Formation requires ocean surface temperatures above 26°C, atmospheric instability, and sufficient distance from the equator for the Coriolis effect to initiate rotation. As warm, moist air rises and condenses, it releases latent heat that powers the system. Storm intensity is limited by cool deep water upwelling and wind shear.`,
+    safety:`• Storm surge — not wind — is the #1 killer. A Category 4 can push 5–6m of water inland.\n• Evacuate Zone A/B immediately when ordered. Don't wait until Category 5.\n• During the eye: DO NOT go outside — the other eyewall is approaching\n• After: contaminated water, downed power lines, and structural failures remain deadly`,
+    impact:`Hurricane Harvey (2017) dropped over 1.5m of rain on Houston in 4 days. Typhoon Haiyan (2013) had sustained winds of 315 km/h at landfall. Climate science projects stronger, wetter hurricanes as ocean temperatures rise, though overall frequency may not change significantly.`
+  },
+  wildfires:{
+    what:`Wildfires propagate through three phases: preheating (drying fuel ahead of flame front), combustion (actual burning), and smoldering (post-fire). Fire behavior is driven by topography, wind, and fuel moisture. Steep terrain accelerates uphill fire dramatically.`,
+    why:`The fire triangle requires fuel, oxygen, and heat. Climate change extends fire seasons by creating hotter, drier conditions. Decades of fire suppression have allowed dense fuel accumulation in western forests. Wind is critical — it provides oxygen, dries fuel, and carries embers kilometers ahead.`,
+    safety:`• EVACUATE EARLY — fires travel faster than most people expect\n• If trapped in a car: park away from trees, close vents, stay below window level\n• "Defensible space" of 30ft cleared around homes dramatically improves survival\n• N95 masks essential — wildfire smoke contains CO, fine particles, and toxic compounds`,
+    impact:`The 2019-20 Australian Black Summer burned 18.6 million hectares — larger than Syria. Wildfires are now a major climate feedback: California's 2020 fires emitted more CO₂ than the state's entire economy in a year. Fire-adapted communities and prescribed burning are increasingly recognized as essential management tools.`
+  },
+  floods:{
+    what:`Floods are categorized as riverine (gradual overflow), flash floods (rapid onset within 6 hours of rainfall), storm surge (coastal inundation from tropical cyclones), and dam/levee failures. Flash floods are the deadliest type due to their sudden onset.`,
+    why:`Urbanization increases flood risk by replacing permeable surfaces with concrete. Deforestation removes natural water retention and increases runoff. Climate change intensifies the hydrological cycle — a 1°C warming allows air to hold 7% more water vapor, resulting in heavier precipitation events.`,
+    safety:`• The rule: "Turn Around, Don't Drown." 6 inches of moving water can knock down an adult.\n• Monitor NOAA Weather Radio and local emergency alerts\n• Know your flood zone — FEMA flood maps are freely available\n• If you must evacuate: move early, take important documents, medications, pets`,
+    impact:`The 2022 Pakistan floods submerged one-third of the entire country, displacing 33 million people. Sea level rise of 1m — projected within this century — would permanently flood land currently home to 150 million people. Flood barriers, wetland restoration, and early warning systems save thousands of lives.`
+  },
+  dustHaze:{
+    what:`Dust and aerosol events occur when turbulent winds exceed the aerodynamic threshold for particle entrainment. Fine particles (PM2.5 — under 2.5 micrometers) penetrate deep into the lungs and enter the bloodstream, causing cardiovascular and respiratory disease.`,
+    why:`Major dust sources include the Sahara/Sahel, Arabian Peninsula, Gobi, Taklamakan, and Patagonia. Land degradation, drought, and reduced vegetation expose loose soil. The Bodélé Depression in Chad is Earth's most prolific dust source, generating 700 million tonnes/year.`,
+    safety:`• AQI over 150: limit all outdoor activity\n• N95 (not surgical) masks filter PM2.5 effectively\n• HEPA air purifiers significantly reduce indoor exposure\n• Those with asthma, COPD, or heart disease face greatest risk\n• Check AirNow.gov or local equivalents for real-time AQI`,
+    impact:`WHO estimates 7 million premature deaths annually from air pollution, largely PM2.5. Saharan dust deposits 22,000 tonnes of phosphorus in the Amazon yearly — essential for rainforest health. Dust also fertilizes ocean phytoplankton, which produce 50% of Earth's oxygen. Reducing desertification is a major climate mitigation strategy.`
+  },
+  landslides:{
+    what:`Landslides are classified by material type (rock, debris, earth) and movement type (fall, slide, flow). Debris flows — water-saturated mobile masses — are among the most dangerous, reaching speeds of 80 km/h and traveling kilometers from the source.`,
+    why:`Slope instability occurs when gravitational and pore water pressure forces exceed shear strength of soil or rock. Triggers include intense rainfall, earthquakes, volcanic activity, and human activity (deforestation, construction). Climate change increases frequency of extreme rainfall events, directly increasing landslide risk.`,
+    safety:`• Research landslide hazard maps for your area before purchasing property\n• During heavy rain: watch for terrain changes — leaning trees, doors sticking, tilting fences\n• Audible warning signs: crackling sounds, unusual rumbling, water turning brown suddenly\n• Escape route: move perpendicular to the slide path, never downhill`,
+    impact:`Landslides transport more sediment annually than all rivers combined. In high-density mountain regions like Nepal, the Philippines, and Appalachia, they cause significant casualties. The 1970 Nevado Huascarán rock avalanche in Peru killed 25,000 in minutes, triggered by an earthquake.`
+  },
+  seaLakeIce:{
+    what:`Sea ice forms annually (seasonal) and accumulates over years (multi-year ice). It regulates Earth's energy balance through the albedo effect — reflecting 80% of sunlight vs. 6% for open water. The Arctic sea ice minimum now occurs in September, and has declined ~13% per decade since satellite records began.`,
+    why:`Arctic amplification — the acceleration of warming at high latitudes — results from reduced sea ice exposing dark ocean that absorbs solar radiation. This creates a positive feedback loop. Permafrost thaw releases stored methane (a greenhouse gas 80x more potent than CO₂ over 20 years), further accelerating warming.`,
+    safety:`• Ice thickness rules: 4" = 1 person, 5" = snowmobile, 8–12" = ATV, 12"+ = small car\n• New ice is weaker than old ice even at equal thickness\n• Carry ice picks for self-rescue; wear a life jacket on ice\n• Coastal communities: monitor storm surge warnings as sea ice loss increases storm exposure`,
+    impact:`September Arctic sea ice volume has declined 75% since the 1980s. If the Greenland Ice Sheet fully melts, sea levels rise 7.2m — inundating most coastal cities. Indigenous Arctic communities face existential threats as traditional ice knowledge becomes unreliable. Melting ice opens shipping routes and creates geopolitical competition for Arctic resources.`
+  }
+};
+
+let currentAgeMode = 'ALL'; // ALL, KIDS, TEEN, ADULT
+
+document.getElementById('bAge').addEventListener('click', function() {
+  ageModeIdx = (ageModeIdx + 1) % AGE_MODES.length;
+  currentAgeMode = AGE_MODES[ageModeIdx];
+  this.textContent = `👤 AGE: ${currentAgeMode}`;
+  this.classList.toggle('on', currentAgeMode !== 'ALL');
+  // Update age badge
+  const badge = document.getElementById('age-badge');
+  if (currentAgeMode === 'ALL') {
+    badge.classList.remove('show');
+  } else {
+    badge.textContent = currentAgeMode === 'KIDS' ? '🧒 KIDS MODE' : currentAgeMode === 'TEEN' ? '👦 TEEN MODE' : '👤 ADULT MODE';
+    badge.classList.add('show');
+  }
+  // Refresh learn panel if open
+  const activeLtab = document.querySelector('.ltab.active');
+  if (activeLtab && learnOpen) showLearnContent(activeLtab.dataset.hz);
+});
+
+// Patch showLearnContent to respect age mode
+const _origShowLearn = showLearnContent;
+window.showLearnContent = function(type) {
+  const d = EDU[type];
+  if (!d) return;
+  document.getElementById('learn-icon').textContent = d.icon;
+  document.getElementById('learn-name').textContent = d.name;
+  document.getElementById('learn-scale').textContent = d.scale;
+  document.getElementById('learn-fact').textContent = d.fact;
+
+  let src = d;
+  if (currentAgeMode === 'KIDS'  && EDU_KIDS[type])  src = {...d, ...EDU_KIDS[type]};
+  if (currentAgeMode === 'TEEN'  && EDU_TEEN[type])  src = {...d, ...EDU_TEEN[type]};
+  // ADULT uses the full EDU (already the most detailed)
+
+  document.getElementById('learn-what').textContent   = src.what;
+  document.getElementById('learn-why').textContent    = src.why;
+  document.getElementById('learn-safety').textContent = src.safety;
+  document.getElementById('learn-impact').textContent = src.impact;
+  document.querySelectorAll('.ltab').forEach(t => t.classList.toggle('active', t.dataset.hz === type));
+};
+
+
+/* ── Boot sequence ── */
+updateStats();
+render_patched();
+loadWorldTopology();
+loadTectonicPlates();
+setTimeout(rotateDYK, 3000);
+
+</script>
+</body>
+</html>
